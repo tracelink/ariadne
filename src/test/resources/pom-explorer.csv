@@ -1,0 +1,6 @@
+from,relation_type,to
+com.example:project-a:1.0,PARENT,com.example:project-b:2.0
+com.example:project-a:1.0,DEPENDENCY,com.example:project-c:3.0
+com.example:project-a:1.0,DEPENDENCY_MANAGEMENT,com.example:project-d:4.0
+com.example:project-a:1.0,BUILD_DEPENDENCY,com.example:project-e:5.0
+com.example:project-c:3.0,DEPENDENCY,org.third.party:library-f:6.0

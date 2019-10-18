@@ -1,0 +1,5 @@
+Threat Level,Policy Name,Organization Name,Application Name,Component Name,Date First Seen,Timestamp First Seen
+10,Security-Critical,Example,com.example.project-a,org.third.party : library-c : 3.0,0,0
+10,Security-Critical,Example,com.example.project-b,org.third.party : library-c : 3.0,0,0
+10,Security-Critical,Example,com.example.project-a,org.third.party : library-d : 4.0,0,0
+10,Security-Critical,Example,com.example.parent,org.third.party : library-e : 5.0,0,0

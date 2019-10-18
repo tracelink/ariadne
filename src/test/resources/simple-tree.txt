@@ -1,0 +1,4 @@
+com.example:project-a:jar:1.0
++- com.example:project-b:jar:2.0
++- com.example:project-c:jar:3.0:compile
+\- org.third.party:library-d:jar:4.0
