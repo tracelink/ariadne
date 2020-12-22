@@ -18,69 +18,79 @@ package com.tracelink.appsec.ariadne.utils;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Utils {
-    ////////////////////////////////////////////// Assume bad formatting ///////////////////////////////////////////////
 
-    public static String getFullName(String artifact) {
-        return String.join(":", formatArtifact(artifact));
-    }
+	private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
 
-    private static String[] formatArtifact(String artifact) {
-        String[] components = Arrays.stream(artifact.split(":")).map(String::trim).toArray(String[]::new);
+	/*
+	 * Assume bad formatting
+	 */
 
-        while (components.length != 3) {
-            switch (components.length) {
-                case 1:
-                    components = artifact.split(" ");
-                    if (components.length == 1) {
-                        throw new IllegalArgumentException("Unknown artifact format - " + artifact);
-                    }
-                    break;
-                case 2:
-                    if (Character.isDigit(components[1].charAt(0))) {
-                        // Set group and artifact to be the same
-                        components = new String[]{components[0], components[0], components[1]};
-                        System.out.println("WARNING: No group/artifact ID - " + artifact);
-                    } else {
-                        // Set version to "null"
-                        components = new String[]{components[0], components[1], "null"};
-                        System.out.println("WARNING: No version - " + artifact);
-                    }
-                    break;
-                default:
-                    StringBuilder artifactId = new StringBuilder();
-                    for (int i = 1; i < components.length - 1; i++) {
-                        if (i != 1) {
-                            artifactId.append(":");
-                        }
-                        artifactId.append(components[i]);
+	public static String getFullName(String artifact) {
+		return String.join(":", formatArtifact(artifact));
+	}
 
-                    }
-                    components = new String[]{
-                            components[0],
-                            artifactId.toString(),
-                            components[components.length - 1]
-                    };
-                    System.out.println("WARNING: Too many components - " + artifact);
-            }
-        }
-        return components;
-    }
+	private static String[] formatArtifact(String artifact) {
+		String[] components = Arrays.stream(artifact.split(":")).map(String::trim)
+				.toArray(String[]::new);
 
-    /////////////////////////////// Assume good formatting (groupId:artifactId:version) ////////////////////////////////
+		while (components.length != 3) {
+			switch (components.length) {
+				case 1:
+					components = artifact.split(" ");
+					if (components.length == 1) {
+						throw new IllegalArgumentException("Unknown artifact format - " + artifact);
+					}
+					break;
+				case 2:
+					if (Character.isDigit(components[1].charAt(0))) {
+						// Set group and artifact to be the same
+						components = new String[]{components[0], components[0], components[1]};
+						LOG.warn("No group/artifact ID: {}", artifact);
+					} else {
+						// Set version to "null"
+						components = new String[]{components[0], components[1], "null"};
+						LOG.warn("No version: {}", artifact);
+					}
+					break;
+				default:
+					StringBuilder artifactId = new StringBuilder();
+					for (int i = 1; i < components.length - 1; i++) {
+						if (i != 1) {
+							artifactId.append(":");
+						}
+						artifactId.append(components[i]);
 
-    public static String getArtifactName(String artifact) {
-        return artifact.substring(0, artifact.lastIndexOf(":"));
-    }
+					}
+					components = new String[]{
+							components[0],
+							artifactId.toString(),
+							components[components.length - 1]
+					};
+					LOG.warn("Too many components: {}", artifact);
+			}
+		}
+		return components;
+	}
 
-    public static String getVersion(String artifact) {
-        return artifact.substring(artifact.lastIndexOf(":") + 1);
-    }
+	/*
+	 * Assume good formatting (groupId:artifactId:version)
+	 */
 
-    public static String getDisplayName(String artifact) {
-        return Arrays.stream(artifact.split(":")[1].split("-"))
-                .map(n -> n.substring(0, 1).toUpperCase() + n.substring(1))
-                .collect(Collectors.joining(" "));
-    }
+	public static String getArtifactName(String artifact) {
+		return artifact.substring(0, artifact.lastIndexOf(":"));
+	}
+
+	public static String getVersion(String artifact) {
+		return artifact.substring(artifact.lastIndexOf(":") + 1);
+	}
+
+	public static String getDisplayName(String artifact) {
+		return Arrays.stream(artifact.split(":")[1].split("-"))
+				.map(n -> n.substring(0, 1).toUpperCase() + n.substring(1))
+				.collect(Collectors.joining(" "));
+	}
 }

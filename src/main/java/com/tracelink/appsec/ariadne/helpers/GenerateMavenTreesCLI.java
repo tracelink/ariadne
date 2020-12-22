@@ -16,165 +16,170 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.helpers;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class GenerateMavenTreesCLI {
-    private File projectsDir;
-    private File outputDir;
-    private int maxDepth = 4;
-    private String defaultOption = "";
-    private Map<String, String> specialOptions = new HashMap<>();
-    private List<String> internalIdentifiers = new ArrayList<>();
 
-    private Options options;
+	private static final Logger LOG = LoggerFactory.getLogger(GenerateMavenTreesCLI.class);
+	private final Options options;
 
-    GenerateMavenTreesCLI() {
-        Option projectsOption = Option.builder("p")
-                .required()
-                .desc("Path to the directory containing all Maven projects")
-                .longOpt("proj")
-                .hasArgs()
-                .numberOfArgs(1)
-                .build();
-        Option outputOption = Option.builder("o")
-                .required()
-                .desc("Path to the output directory")
-                .longOpt("out")
-                .hasArgs()
-                .numberOfArgs(1)
-                .build();
-        Option recursionOption = Option.builder("r")
-                .required(false)
-                .desc("Max depth of recursion")
-                .longOpt("recursion")
-                .hasArgs()
-                .numberOfArgs(1)
-                .build();
-        Option defaultOption = Option.builder("d")
-                .required(false)
-                .desc("The default option string to be used when building dependency trees, i.e. '-Dversion=foo")
-                .longOpt("default")
-                .hasArg()
-                .numberOfArgs(1)
-                .build();
-        Option specialOption = Option.builder("s")
-                .required(false)
-                .desc("Special option strings to be used when building dependency trees, i.e. 'com.example.api,-Dversion=bar'")
-                .longOpt("special")
-                .hasArgs()
-                .build();
-        Option idOption = Option.builder("i")
-                .required(false)
-                .desc("The strings used to identify your internal projects, i.e. 'com.example'")
-                .longOpt("ids")
-                .hasArgs()
-                .build();
+	private File projectsDir;
+	private File outputDir;
+	private int maxDepth = 4;
+	private String defaultOption = "";
+	private Map<String, String> specialOptions = new HashMap<>();
+	private List<String> internalIdentifiers = new ArrayList<>();
 
-        options = new Options();
-        options.addOption(projectsOption);
-        options.addOption(outputOption);
-        options.addOption(recursionOption);
-        options.addOption(defaultOption);
-        options.addOption(specialOption);
-        options.addOption(idOption);
-    }
+	GenerateMavenTreesCLI() {
+		Option projectsOption = Option.builder("p")
+				.required()
+				.desc("Path to the directory containing all Maven projects")
+				.longOpt("proj")
+				.hasArgs()
+				.numberOfArgs(1)
+				.build();
+		Option outputOption = Option.builder("o")
+				.required()
+				.desc("Path to the output directory")
+				.longOpt("out")
+				.hasArgs()
+				.numberOfArgs(1)
+				.build();
+		Option recursionOption = Option.builder("r")
+				.required(false)
+				.desc("Max depth of recursion")
+				.longOpt("recursion")
+				.hasArgs()
+				.numberOfArgs(1)
+				.build();
+		Option defaultOption = Option.builder("d")
+				.required(false)
+				.desc("The default option string to be used when building dependency trees, i.e. '-Dversion=foo")
+				.longOpt("default")
+				.hasArg()
+				.numberOfArgs(1)
+				.build();
+		Option specialOption = Option.builder("s")
+				.required(false)
+				.desc("Special option strings to be used when building dependency trees, i.e. 'com.example.api,-Dversion=bar'")
+				.longOpt("special")
+				.hasArgs()
+				.build();
+		Option idOption = Option.builder("i")
+				.required(false)
+				.desc("The strings used to identify your internal projects, i.e. 'com.example'")
+				.longOpt("ids")
+				.hasArgs()
+				.build();
 
-    boolean parseArgs(String[] args) {
-        CommandLineParser parser = new DefaultParser();
-        CommandLine commandLine;
+		options = new Options();
+		options.addOption(projectsOption);
+		options.addOption(outputOption);
+		options.addOption(recursionOption);
+		options.addOption(defaultOption);
+		options.addOption(specialOption);
+		options.addOption(idOption);
+	}
 
-        try {
-            commandLine = parser.parse(options, args);
+	boolean parseArgs(String[] args) {
+		CommandLineParser parser = new DefaultParser();
+		CommandLine commandLine;
 
-            // Set projects directory
-            setProjectsDir(commandLine.getOptionValue("p"));
-            // Set output directory
-            setOutputDir(commandLine.getOptionValue("o"));
-            // Set max recursion depth
-            if (commandLine.hasOption("r")) {
-                maxDepth = Integer.parseInt(commandLine.getOptionValue("r"));
-            }
-            // Set default option string
-            if (commandLine.hasOption("d")) {
-                defaultOption = commandLine.getOptionValue("d");
-            }
-            // Set special option strings
-            if (commandLine.hasOption("s")) {
-                String[] specialOptionValues = commandLine.getOptionValues("s");
-                for (String specialOption : specialOptionValues) {
-                    String[] kv = specialOption.split(",");
-                    if (kv.length == 2) {
-                        specialOptions.put(kv[0], kv[1]);
-                    } else if (kv.length == 1) {
-                        specialOptions.put(kv[0], "");
-                    }
-                }
-            }
-            // Set internal identifiers
-            if (commandLine.hasOption("i")) {
-                internalIdentifiers = Arrays.asList(commandLine.getOptionValues("i"));
-            }
+		try {
+			commandLine = parser.parse(options, args);
 
-        } catch (Exception e) {
-            System.out.println("ERROR: Exception occurred. " + e.getMessage());
-            printHelp();
-            return false;
-        }
-        return true;
-    }
+			// Set projects directory
+			setProjectsDir(commandLine.getOptionValue("p"));
+			// Set output directory
+			setOutputDir(commandLine.getOptionValue("o"));
+			// Set max recursion depth
+			if (commandLine.hasOption("r")) {
+				maxDepth = Integer.parseInt(commandLine.getOptionValue("r"));
+			}
+			// Set default option string
+			if (commandLine.hasOption("d")) {
+				defaultOption = commandLine.getOptionValue("d");
+			}
+			// Set special option strings
+			if (commandLine.hasOption("s")) {
+				String[] specialOptionValues = commandLine.getOptionValues("s");
+				for (String specialOption : specialOptionValues) {
+					String[] kv = specialOption.split(",");
+					if (kv.length == 2) {
+						specialOptions.put(kv[0], kv[1]);
+					} else if (kv.length == 1) {
+						specialOptions.put(kv[0], "");
+					}
+				}
+			}
+			// Set internal identifiers
+			if (commandLine.hasOption("i")) {
+				internalIdentifiers = Arrays.asList(commandLine.getOptionValues("i"));
+			}
 
-    File getProjectsDir() {
-        return projectsDir;
-    }
+		} catch (Exception e) {
+			LOG.error("Exception occurred: {}", e.getMessage());
+			printHelp();
+			return false;
+		}
+		return true;
+	}
 
-    private void setProjectsDir(String projectsPath) {
-        projectsDir = new File(projectsPath);
-        if (!projectsDir.exists() && !projectsDir.isDirectory()) {
-            throw new IllegalArgumentException("Please provide a valid path to the projects directory.");
-        }
-    }
+	File getProjectsDir() {
+		return projectsDir;
+	}
 
-    File getOutputDir() {
-        return outputDir;
-    }
+	private void setProjectsDir(String projectsPath) {
+		projectsDir = new File(projectsPath);
+		if (!projectsDir.exists() && !projectsDir.isDirectory()) {
+			throw new IllegalArgumentException(
+					"Please provide a valid path to the projects directory.");
+		}
+	}
 
-    private void setOutputDir(String outputPath) {
-        outputDir = new File(outputPath);
-        boolean success = outputDir.mkdirs();
-        if (!success && !outputDir.isDirectory()) {
-            throw new IllegalArgumentException("Please provide a valid path to the output directory.");
-        }
-    }
+	File getOutputDir() {
+		return outputDir;
+	}
 
-    int getMaxDepth() {
-        return maxDepth;
-    }
+	private void setOutputDir(String outputPath) {
+		outputDir = new File(outputPath);
+		boolean success = outputDir.mkdirs();
+		if (!success && !outputDir.isDirectory()) {
+			throw new IllegalArgumentException(
+					"Please provide a valid path to the output directory.");
+		}
+	}
 
-    String getDefaultOption() {
-        return defaultOption;
-    }
+	int getMaxDepth() {
+		return maxDepth;
+	}
 
-    Map<String, String> getSpecialOptions() {
-        return specialOptions;
-    }
+	String getDefaultOption() {
+		return defaultOption;
+	}
 
-    List<String> getInternalIdentifiers() {
-        return internalIdentifiers;
-    }
+	Map<String, String> getSpecialOptions() {
+		return specialOptions;
+	}
 
-    void printHelp() {
-        new HelpFormatter().printHelp("maventrees", options);
-    }
+	List<String> getInternalIdentifiers() {
+		return internalIdentifiers;
+	}
+
+	void printHelp() {
+		new HelpFormatter().printHelp("maventrees", options);
+	}
 }

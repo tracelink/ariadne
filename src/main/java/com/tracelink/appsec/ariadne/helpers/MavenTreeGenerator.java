@@ -25,9 +25,12 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class MavenTreeGenerator {
 
+	private static final Logger LOG = LoggerFactory.getLogger(MavenTreeGenerator.class);
 	private final File outputDir;
 	private final int maxDepth;
 	private final String defaultOption;

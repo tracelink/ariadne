@@ -20,89 +20,92 @@ import com.tracelink.appsec.ariadne.model.Artifact;
 import com.tracelink.appsec.ariadne.model.ExternalArtifact;
 import com.tracelink.appsec.ariadne.model.InternalArtifact;
 import com.tracelink.appsec.ariadne.utils.Utils;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Analyzer {
-    private List<String> internalIdentifiers;
-    private Map<String, Artifact> artifacts = new TreeMap<>();
 
-    public Analyzer(List<String> internalIdentifiers) {
-        this.internalIdentifiers = internalIdentifiers;
-    }
+	private static final Logger LOG = LoggerFactory.getLogger(Analyzer.class);
+	private final List<String> internalIdentifiers;
+	private final Map<String, Artifact> artifacts = new TreeMap<>();
 
-    public List<Artifact> getArtifacts() {
-        return Collections.unmodifiableList(new ArrayList<>(artifacts.values()));
-    }
+	public Analyzer(List<String> internalIdentifiers) {
+		this.internalIdentifiers = internalIdentifiers;
+	}
 
-    public void analyzeDependencies(List<Map.Entry<String, String>> dependencies) {
-        for (Map.Entry<String, String> dependency : dependencies) {
-            // Get parent and child names
-            String parent = dependency.getKey();
-            String child = dependency.getValue();
-            // Get parent and child artifacts
-            Artifact parentArtifact = getArtifactForName(parent);
-            Artifact childArtifact = getArtifactForName(child);
-            // Add parent artifact to child artifact and vice versa
-            childArtifact.addParent(Utils.getVersion(child), parentArtifact);
-            parentArtifact.addChild(Utils.getVersion(parent), childArtifact);
-        }
-    }
+	public List<Artifact> getArtifacts() {
+		return Collections.unmodifiableList(new ArrayList<>(artifacts.values()));
+	}
 
-    public void analyzeVulnerabilities(List<Map.Entry<String, Integer>> vulnerabilities) {
-        for (Map.Entry<String, Integer> vulnerability : vulnerabilities) {
-            String fullName = vulnerability.getKey();
-            Integer findings = vulnerability.getValue();
+	public void analyzeDependencies(List<Map.Entry<String, String>> dependencies) {
+		for (Map.Entry<String, String> dependency : dependencies) {
+			// Get parent and child names
+			String parent = dependency.getKey();
+			String child = dependency.getValue();
+			// Get parent and child artifacts
+			Artifact parentArtifact = getArtifactForName(parent);
+			Artifact childArtifact = getArtifactForName(child);
+			// Add parent artifact to child artifact and vice versa
+			childArtifact.addParent(Utils.getVersion(child), parentArtifact);
+			parentArtifact.addChild(Utils.getVersion(parent), childArtifact);
+		}
+	}
 
-            Artifact artifact = getArtifactForName(fullName);
-            if (artifact.getConnections() == 0) {
-                System.out.println(String.format("WARNING: Vulnerability not found: %s", artifact.getName()));
-            }
-            artifact.addFindings(findings);
-        }
-    }
+	public void analyzeVulnerabilities(List<Map.Entry<String, Integer>> vulnerabilities) {
+		for (Map.Entry<String, Integer> vulnerability : vulnerabilities) {
+			String fullName = vulnerability.getKey();
+			Integer findings = vulnerability.getValue();
 
-    private Artifact getArtifactForName(String fullName) {
-        // Parse useful data from dependency full name
-        String artifactName = Utils.getArtifactName(fullName);
-        String version = Utils.getVersion(fullName);
+			Artifact artifact = getArtifactForName(fullName);
+			if (artifact.getConnections() == 0) {
+				LOG.warn("Vulnerability not found: {}", artifact.getName());
+			}
+			artifact.addFindings(findings);
+		}
+	}
 
-        Artifact artifact;
-        if (artifacts.containsKey(fullName)) {
-            // We have already stored this external artifact
-            artifact = artifacts.get(fullName);
-        } else if (artifacts.containsKey(artifactName)) {
-            // We have already stored this internal artifact
-            artifact = artifacts.get(artifactName);
-            artifact.addVersion(version);
-        } else if (internalIdentifiers.stream().anyMatch(artifactName::contains)) {
-            // New internal artifact
-            artifact = new InternalArtifact(fullName);
-            artifacts.put(artifactName, artifact);
-        } else {
-            // New external artifact
-            artifact = new ExternalArtifact(fullName);
-            artifacts.put(fullName, artifact);
-        }
-        return artifact;
-    }
+	private Artifact getArtifactForName(String fullName) {
+		// Parse useful data from dependency full name
+		String artifactName = Utils.getArtifactName(fullName);
+		String version = Utils.getVersion(fullName);
 
-    public void analyzeTiers() {
-        // Identify cycles to prevent addition of extra tiers
-        for (Artifact artifact : artifacts.values()) {
-            if (artifact instanceof InternalArtifact) {
-                artifact.findCycles(new ArrayList<>());
-            }
-        }
-        // Assign tiers to internal artifacts affected by vulnerable external artifacts
-        for (Artifact artifact : artifacts.values()) {
-            if (artifact.isVulnerable()) {
-                artifact.assignTiers();
-            }
-        }
-    }
+		Artifact artifact;
+		if (artifacts.containsKey(fullName)) {
+			// We have already stored this external artifact
+			artifact = artifacts.get(fullName);
+		} else if (artifacts.containsKey(artifactName)) {
+			// We have already stored this internal artifact
+			artifact = artifacts.get(artifactName);
+			artifact.addVersion(version);
+		} else if (internalIdentifiers.stream().anyMatch(artifactName::contains)) {
+			// New internal artifact
+			artifact = new InternalArtifact(fullName);
+			artifacts.put(artifactName, artifact);
+		} else {
+			// New external artifact
+			artifact = new ExternalArtifact(fullName);
+			artifacts.put(fullName, artifact);
+		}
+		return artifact;
+	}
+
+	public void analyzeTiers() {
+		// Identify cycles to prevent addition of extra tiers
+		for (Artifact artifact : artifacts.values()) {
+			if (artifact instanceof InternalArtifact) {
+				artifact.findCycles(new ArrayList<>());
+			}
+		}
+		// Assign tiers to internal artifacts affected by vulnerable external artifacts
+		for (Artifact artifact : artifacts.values()) {
+			if (artifact.isVulnerable()) {
+				artifact.assignTiers();
+			}
+		}
+	}
 }

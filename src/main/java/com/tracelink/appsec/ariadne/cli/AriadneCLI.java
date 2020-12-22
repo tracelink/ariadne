@@ -35,16 +35,19 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AriadneCLI {
+
+	private static final Logger LOG = LoggerFactory.getLogger(AriadneCLI.class);
+	private final Options options;
 
 	private DependencyReader dependencyReader;
 	private VulnerabilityReader vulnerabilityReader;
 	private Analyzer analyzer;
 	private Writer writer;
 	private boolean writeStats;
-
-	private final Options options;
 
 	public AriadneCLI() {
 		Option depOption = Option.builder("d")
@@ -133,8 +136,7 @@ public class AriadneCLI {
 			// Set stats flag
 			writeStats = commandLine.hasOption("s");
 		} catch (Exception e) {
-			System.out.println(
-					"ERROR: Exception occurred while parsing arguments. " + e.getMessage());
+			LOG.error("Exception occurred while parsing arguments: {}", e.getMessage());
 			printHelp();
 			return false;
 		}
