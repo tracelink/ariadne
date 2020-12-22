@@ -16,9 +16,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.read.dependency;
 
+import com.opencsv.CSVReader;
 import com.tracelink.appsec.ariadne.utils.Utils;
-
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -29,31 +28,31 @@ import java.util.List;
 import java.util.Map;
 
 public class PomExplorerReader implements DependencyReader {
-    private File file;
 
-    public PomExplorerReader(String path) throws FileNotFoundException {
-        file = new File(path);
-        if (!file.exists() || file.isDirectory()) {
-            throw new FileNotFoundException("Please provide a valid path to the Pom Explorer data.");
-        }
-    }
+	private final File file;
 
-    @Override
-    public List<Map.Entry<String, String>> readDependencies() throws IOException {
-        List<Map.Entry<String, String>> dependencies = new ArrayList<>();
+	public PomExplorerReader(String path) throws FileNotFoundException {
+		file = new File(path);
+		if (!file.exists() || file.isDirectory()) {
+			throw new FileNotFoundException("Please provide a valid path to the Pom Explorer data");
+		}
+	}
 
-        try (BufferedReader fileReader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = fileReader.readLine()) != null) {
-                String[] components = line.split(",");
-                String parent = components[0];
-                String child = components[2];
-                if (parent.equals("from")) {
-                    continue;
-                }
-                dependencies.add(new AbstractMap.SimpleEntry<>(Utils.getFullName(parent), Utils.getFullName(child)));
-            }
-        }
-        return dependencies;
-    }
+	@Override
+	public List<Map.Entry<String, String>> readDependencies() throws IOException {
+		List<Map.Entry<String, String>> dependencies = new ArrayList<>();
+
+		try (CSVReader csvReader = new CSVReader(new FileReader(file))) {
+			for (String[] row : csvReader) {
+				String parent = row[0];
+				String child = row[2];
+				if (parent.equals("from")) {
+					continue;
+				}
+				dependencies.add(new AbstractMap.SimpleEntry<>(Utils.getFullName(parent),
+						Utils.getFullName(child)));
+			}
+		}
+		return dependencies;
+	}
 }

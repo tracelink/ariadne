@@ -16,10 +16,10 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.write;
 
+import com.opencsv.CSVWriter;
 import com.tracelink.appsec.ariadne.model.Artifact;
 import com.tracelink.appsec.ariadne.model.InternalArtifact;
 import com.tracelink.appsec.ariadne.utils.Utils;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -55,19 +55,13 @@ public class StandardCsvWriter implements Writer {
 
 	@Override
 	public void writeDependencies() {
-		try (BufferedWriter writer = new BufferedWriter(
-				new FileWriter(outputPath + "/dependencies.csv"))) {
-			StringBuilder sb = new StringBuilder();
-			appendLine(sb, "Project Name", "# Used", "# Versions");
+		String fileName = outputPath + "/dependencies.csv";
+		try (CSVWriter writer = new CSVWriter(new FileWriter(fileName))) {
+			writer.writeNext(new String[]{"Project Name", "# Used", "# Versions"});
 
-			artifacts.forEach(a -> {
-				if (a instanceof InternalArtifact) {
-					appendLine(sb, a.getName(), String.valueOf(a.getConnections()),
-							String.valueOf(a.getVersions().size()));
-				}
-			});
-
-			writer.write(sb.toString());
+			artifacts.stream().filter(InternalArtifact.class::isInstance).forEach(a -> writer
+					.writeNext(new String[]{a.getName(), String.valueOf(a.getConnections()),
+							String.valueOf(a.getVersions().size())}));
 		} catch (IOException e) {
 			LOG.error("Exception occurred while writing dependency summary: {}", e.getMessage());
 		}
@@ -75,9 +69,8 @@ public class StandardCsvWriter implements Writer {
 
 	@Override
 	public void writeVulnerabilities() {
-		try (BufferedWriter writer = new BufferedWriter(
-				new FileWriter(outputPath + "/vulnerabilities.csv"))) {
-			StringBuilder sb = new StringBuilder();
+		String fileName = outputPath + "/vulnerabilities.csv";
+		try (CSVWriter writer = new CSVWriter(new FileWriter(fileName))) {
 
 			int totalArtifacts = 0;
 			int totalFindings = 0;
@@ -105,17 +98,16 @@ public class StandardCsvWriter implements Writer {
 			for (Entry<String, List<Artifact>> artifactNameEntry : artifactMap.entrySet()) {
 				String artifactName = artifactNameEntry.getKey();
 				List<Artifact> groupedArtifacts = artifactNameEntry.getValue();
-				appendLine(sb, "\n");
+				writer.writeNext(new String[]{"", ""});
 				String displayName = Utils.getDisplayName(artifactName);
-				appendLine(sb, displayName, "Total");
-				groupedArtifacts
-						.forEach(a -> appendLine(sb, a.getName(), String.valueOf(a.getFindings())));
+				writer.writeNext(new String[]{displayName, "Total"});
+				groupedArtifacts.forEach(a -> writer
+						.writeNext(new String[]{a.getName(), String.valueOf(a.getFindings())}));
 				int numFindings = groupedArtifacts.stream().mapToInt(Artifact::getFindings).sum();
 				double percent = ((numFindings * 1.00) / totalFindings) * 100;
-				appendLine(sb, String.format("%.2f%%", percent), String.valueOf(numFindings));
+				writer.writeNext(new String[]{String.format("%.2f%%", percent),
+						String.valueOf(numFindings)});
 			}
-
-			writer.write(sb.toString());
 		} catch (IOException e) {
 			LOG.error("Exception occurred while writing vulnerability summary: {}", e.getMessage());
 		}
@@ -123,15 +115,14 @@ public class StandardCsvWriter implements Writer {
 
 	@Override
 	public void writeTiers() {
-		try (BufferedWriter writer = new BufferedWriter(
-				new FileWriter(outputPath + "/tiers.csv"))) {
-			StringBuilder sb = new StringBuilder();
-			appendLine(sb,
+		String fileName = outputPath + "/tiers.csv";
+		try (CSVWriter writer = new CSVWriter(new FileWriter(fileName))) {
+			writer.writeNext(new String[]{
 					"Project Name",
 					"Tier",
 					"Internal Dependencies to Upgrade",
 					"External Dependencies to Upgrade"
-			);
+			});
 
 			int numArtifacts = 0;
 			int numTiers = 0;
@@ -140,19 +131,17 @@ public class StandardCsvWriter implements Writer {
 				if (artifact.getTier() != -1) {
 					numArtifacts += 1;
 					numTiers = Integer.max(numTiers, artifact.getTier() + 1);
-					appendLine(sb,
+					writer.writeNext(new String[]{
 							artifact.getName(),
 							String.valueOf(artifact.getTier()),
-							"\"" + formatInternalUpgrades(artifact.getInternalUpgrades()) + "\"",
-							"\"" + formatExternalUpgrades(artifact.getExternalUpgrades()) + "\""
-					);
+							formatInternalUpgrades(artifact.getInternalUpgrades()),
+							formatExternalUpgrades(artifact.getExternalUpgrades())
+					});
 				}
 			}
 
 			LOG.info("Artifacts to Update: {}", numArtifacts);
 			LOG.info("Number of Tiers: {}", numTiers);
-
-			writer.write(sb.toString());
 		} catch (IOException e) {
 			LOG.error("Exception occurred while writing tier summary: {}", e.getMessage());
 		}
@@ -193,15 +182,5 @@ public class StandardCsvWriter implements Writer {
 			}
 		}
 		return sb.toString().trim();
-	}
-
-	private void appendLine(StringBuilder sb, String... values) {
-		for (int i = 0; i < values.length; i++) {
-			if (i != 0) {
-				sb.append(",");
-			}
-			sb.append(values[i]);
-		}
-		sb.append("\n");
 	}
 }
