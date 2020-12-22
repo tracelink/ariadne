@@ -27,133 +27,140 @@ import java.util.List;
 import java.util.Map;
 
 class MavenTreeGenerator {
-    private File outputDir;
-    private int maxDepth;
-    private String defaultOption;
-    private Map<String, String> specialOptions;
-    private List<String> internalIdentifiers;
 
-    MavenTreeGenerator(File outputDir, int maxDepth, String defaultOption, Map<String, String> specialOptions,
-                       List<String> internalIdentifiers) {
-        this.outputDir = outputDir;
-        this.maxDepth = maxDepth;
-        this.defaultOption = defaultOption;
-        this.specialOptions = specialOptions;
-        this.internalIdentifiers = internalIdentifiers;
-    }
+	private final File outputDir;
+	private final int maxDepth;
+	private final String defaultOption;
+	private final Map<String, String> specialOptions;
+	private final List<String> internalIdentifiers;
 
-    void buildTrees(File file, int depth) {
-        // Stop recursion if this is not a directory or we have exceeded the maximum search depth
-        if (depth > maxDepth || !file.isDirectory()) {
-            return;
-        }
+	MavenTreeGenerator(File outputDir, int maxDepth, String defaultOption,
+			Map<String, String> specialOptions, List<String> internalIdentifiers) {
+		this.outputDir = outputDir;
+		this.maxDepth = maxDepth;
+		this.defaultOption = defaultOption;
+		this.specialOptions = specialOptions;
+		this.internalIdentifiers = internalIdentifiers;
+	}
 
-        // Get all files for this directory
-        File[] innerFiles = file.listFiles();
-        if (innerFiles == null) {
-            return;
-        }
-        // If there is no POM file in this directory, recursively search other directories until max depth reached
-        if (Arrays.stream(innerFiles).noneMatch(f -> f.getName().equals("pom.xml"))) {
-            if (depth == 1) {
-                System.out.println("WARNING: " + file.getAbsolutePath() + " - No POM file");
-            }
-            Arrays.stream(innerFiles).forEach(
-                    f -> buildTrees(f, depth + 1));
-        } else {
-            // There is a POM file in this directory. Attempt to build Maven dependency tree
-            String outputPath = outputDir.getAbsolutePath() + "/" + file.getName() + ".txt";
-            String options = specialOptions.getOrDefault(file.getName(), defaultOption);
+	void buildTrees(File file, int depth) {
+		// Stop recursion if this is not a directory or we have exceeded the maximum search depth
+		if (depth > maxDepth || !file.isDirectory()) {
+			return;
+		}
 
-            ProcessBuilder processBuilder = new ProcessBuilder()
-                    // Uncomment this line to see Maven build output in console
-                    // .inheritIO()
-                    .directory(file)
-                    .command("mvn", "dependency:tree", "-DappendOutput=true", "-DoutputFile=" + outputPath, options);
-            try {
-                Process process = processBuilder.start();
-                int exitCode = process.waitFor();
-                // If build failed, add to list of failures
-                if (exitCode != 0 && depth == 1) {
-                    System.out.println("WARNING: " + file.getAbsolutePath() + " - Build failed");
-                } else {
-                    System.out.println("SUCCESS: " + file.getAbsolutePath());
-                }
-            } catch (IOException | InterruptedException e) {
-                System.out.println("WARNING: Exception occurred. " + e.getMessage());
-            }
-        }
-    }
+		// Get all files for this directory
+		File[] innerFiles = file.listFiles();
+		if (innerFiles == null) {
+			return;
+		}
+		// If there is no POM file in this directory, recursively search other directories until max depth reached
+		if (Arrays.stream(innerFiles).noneMatch(f -> f.getName().equals("pom.xml"))) {
+			if (depth == 1) {
+				System.out.println("WARNING: " + file.getAbsolutePath() + " - No POM file");
+			}
+			Arrays.stream(innerFiles).forEach(
+					f -> buildTrees(f, depth + 1));
+		} else {
+			// There is a POM file in this directory. Attempt to build Maven dependency tree
+			String outputPath = outputDir.getAbsolutePath() + "/" + file.getName() + ".txt";
+			String options = specialOptions.getOrDefault(file.getName(), defaultOption);
 
-    void identifyParents(File file, int depth) {
-        // Stop recursion if this is not a directory or we have exceeded the maximum search depth
-        if (depth > maxDepth || !file.isDirectory()) {
-            return;
-        }
+			ProcessBuilder processBuilder = new ProcessBuilder()
+					// Uncomment this line to see Maven build output in console
+					//.inheritIO()
+					.directory(file);
+			if (options.length() > 0) {
+				processBuilder.command("mvn", "dependency:tree", "-DappendOutput=true",
+						"-DoutputFile=" + outputPath, options);
+			} else {
+				processBuilder.command("mvn", "dependency:tree", "-DappendOutput=true",
+						"-DoutputFile=" + outputPath);
+			}
 
-        // Get all files for this directory
-        File[] innerFiles = file.listFiles();
-        if (innerFiles == null) {
-            return;
-        }
-        // If there is a POM file in this directory, check if it specifies a parent
-        if (Arrays.stream(innerFiles).anyMatch(f -> f.getName().equals("pom.xml"))) {
-            String options = specialOptions.getOrDefault(file.getName(), defaultOption);
+			try {
+				Process process = processBuilder.start();
+				int exitCode = process.waitFor();
+				// If build failed, add to list of failures
+				if (exitCode != 0 && depth == 1) {
+					System.out.println("WARNING: " + file.getAbsolutePath() + " - Build failed");
+				} else {
+					System.out.println("SUCCESS: " + file.getAbsolutePath());
+				}
+			} catch (IOException | InterruptedException e) {
+				System.out.println("WARNING: Exception occurred. " + e.getMessage());
+			}
+		}
+	}
 
-            String pGroupId = evaluateArtifactExpression(file, "project.parent.groupId", options);
-            if (pGroupId == null
-                    || pGroupId.equals("null object or invalid expression")
-                    || pGroupId.contains("[ERROR]")
-                    || internalIdentifiers.stream().noneMatch(pGroupId::contains)) {
-                return;
-            }
+	void identifyParents(File file, int depth) {
+		// Stop recursion if this is not a directory or we have exceeded the maximum search depth
+		if (depth > maxDepth || !file.isDirectory()) {
+			return;
+		}
 
-            String pArtifactId = evaluateArtifactExpression(file, "project.parent.artifactId", options);
-            String pVersion = evaluateArtifactExpression(file, "project.parent.version", options);
-            String pName = String.join(":", pGroupId, pArtifactId, pVersion);
+		// Get all files for this directory
+		File[] innerFiles = file.listFiles();
+		if (innerFiles == null) {
+			return;
+		}
+		// If there is a POM file in this directory, check if it specifies a parent
+		if (Arrays.stream(innerFiles).anyMatch(f -> f.getName().equals("pom.xml"))) {
+			String options = specialOptions.getOrDefault(file.getName(), defaultOption);
 
-            String cGroupId = evaluateArtifactExpression(file, "project.groupId", options);
-            String cArtifactId = evaluateArtifactExpression(file, "project.artifactId", options);
-            String cVersion = evaluateArtifactExpression(file, "project.version", options);
-            String cName = String.join(":", cGroupId, cArtifactId, cVersion);
+			String pGroupId = evaluateArtifactExpression(file, "project.parent.groupId", options);
+			if (pGroupId == null
+					|| pGroupId.equals("null object or invalid expression")
+					|| pGroupId.contains("[ERROR]")
+					|| internalIdentifiers.stream().noneMatch(pGroupId::contains)) {
+				return;
+			}
 
-            System.out.println(cName + " ---> " + pName);
+			String pArtifactId = evaluateArtifactExpression(file, "project.parent.artifactId",
+					options);
+			String pVersion = evaluateArtifactExpression(file, "project.parent.version", options);
+			String pName = String.join(":", pGroupId, pArtifactId, pVersion);
 
-            // Write parent-child relationship to file
-            String outputPath = outputDir.getAbsolutePath() + "/parents.txt";
-            try {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath, true));
-                writer.write(cName);
-                writer.newLine();
-                writer.write("\\- ");
-                writer.write(pName);
-                writer.newLine();
-                writer.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e.getMessage());
-            }
-        }
+			String cGroupId = evaluateArtifactExpression(file, "project.groupId", options);
+			String cArtifactId = evaluateArtifactExpression(file, "project.artifactId", options);
+			String cVersion = evaluateArtifactExpression(file, "project.version", options);
+			String cName = String.join(":", cGroupId, cArtifactId, cVersion);
 
-        Arrays.stream(innerFiles).forEach(
-                f -> identifyParents(f, depth + 1));
-    }
+			System.out.println(cName + " ---> " + pName);
 
-    private String evaluateArtifactExpression(File file, String expression, String options) {
-        ProcessBuilder processBuilder = new ProcessBuilder()
-                .directory(file)
-                .command("mvn", "help:evaluate", "-Dexpression=" + expression, "-q", "-DforceStdout",
-                        options);
-        String result = null;
-        try {
-            Process process = processBuilder.start();
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                result = br.readLine();
-            }
-        } catch (IOException e) {
-            System.out.println("WARNING: Exception occurred. " + e.getMessage());
-        }
-        return result;
-    }
+			// Write parent-child relationship to file
+			String outputPath = outputDir.getAbsolutePath() + "/parents.txt";
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath, true));
+				writer.write(cName);
+				writer.newLine();
+				writer.write("\\- ");
+				writer.write(pName);
+				writer.newLine();
+				writer.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e.getMessage());
+			}
+		}
 
+		Arrays.stream(innerFiles).forEach(f -> identifyParents(f, depth + 1));
+	}
 
+	private String evaluateArtifactExpression(File file, String expression, String options) {
+		ProcessBuilder processBuilder = new ProcessBuilder()
+				.directory(file)
+				.command("mvn", "help:evaluate", "-Dexpression=" + expression, "-q",
+						"-DforceStdout", options);
+		String result = null;
+		try {
+			Process process = processBuilder.start();
+			try (BufferedReader br = new BufferedReader(
+					new InputStreamReader(process.getInputStream()))) {
+				result = br.readLine();
+			}
+		} catch (IOException e) {
+			System.out.println("WARNING: Exception occurred. " + e.getMessage());
+		}
+		return result;
+	}
 }

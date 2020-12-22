@@ -22,12 +22,13 @@ import com.tracelink.appsec.ariadne.read.dependency.DependencyReaderType;
 import com.tracelink.appsec.ariadne.read.dependency.MavenDependencyTreeReader;
 import com.tracelink.appsec.ariadne.read.dependency.PomExplorerReader;
 import com.tracelink.appsec.ariadne.read.vulnerability.NexusIQViolationsReader;
+import com.tracelink.appsec.ariadne.read.vulnerability.VeracodeScaIssuesReader;
 import com.tracelink.appsec.ariadne.read.vulnerability.VulnerabilityReader;
 import com.tracelink.appsec.ariadne.read.vulnerability.VulnerabilityReaderType;
 import com.tracelink.appsec.ariadne.write.StandardCsvWriter;
 import com.tracelink.appsec.ariadne.write.Writer;
 import com.tracelink.appsec.ariadne.write.WriterType;
-
+import java.util.Arrays;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -35,129 +36,132 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 
-import java.util.Arrays;
-
 public class AriadneCLI {
-    private DependencyReader dependencyReader;
-    private VulnerabilityReader vulnerabilityReader;
-    private Analyzer analyzer;
-    private Writer writer;
-    private boolean writeStats;
 
-    private Options options;
+	private DependencyReader dependencyReader;
+	private VulnerabilityReader vulnerabilityReader;
+	private Analyzer analyzer;
+	private Writer writer;
+	private boolean writeStats;
 
-    public AriadneCLI() {
-        Option depOption = Option.builder("d")
-                .required()
-                .desc("The type of dependency reader to use")
-                .longOpt("dep")
-                .hasArgs()
-                .numberOfArgs(2)
-                .build();
-        Option vulnOption = Option.builder("v")
-                .required()
-                .desc("The type of vulnerability reader to use")
-                .longOpt("vuln")
-                .hasArgs()
-                .numberOfArgs(2)
-                .build();
-        Option writerOption = Option.builder("w")
-                .required()
-                .desc("The type of writer to use")
-                .longOpt("writer")
-                .hasArgs()
-                .numberOfArgs(2)
-                .build();
-        Option idOption = Option.builder("i")
-                .required()
-                .desc("The strings used to identify your internal projects, i.e. 'com.example'")
-                .longOpt("ids")
-                .hasArgs()
-                .build();
-        Option statsOption = Option.builder("s")
-                .required(false)
-                .desc("Indicates that additional stats should be written to the output directory")
-                .longOpt("stats")
-                .build();
+	private final Options options;
 
+	public AriadneCLI() {
+		Option depOption = Option.builder("d")
+				.required()
+				.desc("The type of dependency reader to use")
+				.longOpt("dep")
+				.hasArgs()
+				.numberOfArgs(2)
+				.build();
+		Option vulnOption = Option.builder("v")
+				.required()
+				.desc("The type of vulnerability reader to use")
+				.longOpt("vuln")
+				.hasArgs()
+				.numberOfArgs(2)
+				.build();
+		Option writerOption = Option.builder("w")
+				.required()
+				.desc("The type of writer to use")
+				.longOpt("writer")
+				.hasArgs()
+				.numberOfArgs(2)
+				.build();
+		Option idOption = Option.builder("i")
+				.required()
+				.desc("The strings used to identify your internal projects, i.e. 'com.example'")
+				.longOpt("ids")
+				.hasArgs()
+				.build();
+		Option statsOption = Option.builder("s")
+				.required(false)
+				.desc("Indicates that additional stats should be written to the output directory")
+				.longOpt("stats")
+				.build();
 
-        options = new Options();
-        options.addOption(depOption);
-        options.addOption(vulnOption);
-        options.addOption(writerOption);
-        options.addOption(idOption);
-        options.addOption(statsOption);
-    }
+		options = new Options();
+		options.addOption(depOption);
+		options.addOption(vulnOption);
+		options.addOption(writerOption);
+		options.addOption(idOption);
+		options.addOption(statsOption);
+	}
 
-    public boolean parseArgs(String[] args) {
-        CommandLineParser parser = new DefaultParser();
-        CommandLine commandLine;
-        try {
-            commandLine = parser.parse(options, args);
+	public boolean parseArgs(String[] args) {
+		CommandLineParser parser = new DefaultParser();
+		CommandLine commandLine;
+		try {
+			commandLine = parser.parse(options, args);
 
-            String[] depOptionValues = commandLine.getOptionValues("d");
-            String[] vulnOptionValues = commandLine.getOptionValues("v");
-            String[] writerOptionValues = commandLine.getOptionValues("w");
-            String[] idOptionValues = commandLine.getOptionValues("i");
+			String[] depOptionValues = commandLine.getOptionValues("d");
+			String[] vulnOptionValues = commandLine.getOptionValues("v");
+			String[] writerOptionValues = commandLine.getOptionValues("w");
+			String[] idOptionValues = commandLine.getOptionValues("i");
 
-            // Set dependency reader
-            DependencyReaderType dependencyReaderType = DependencyReaderType.getTypeForName(depOptionValues[0]);
-            switch (dependencyReaderType) {
-                case MAVEN_TREE:
-                    dependencyReader = new MavenDependencyTreeReader(depOptionValues[1]);
-                    break;
-                case POM_EXPLORER:
-                    dependencyReader = new PomExplorerReader(depOptionValues[1]);
-                    break;
-            }
-            // Set vulnerability reader
-            VulnerabilityReaderType vulnerabilityReaderType = VulnerabilityReaderType
-                    .getTypeForName(vulnOptionValues[0]);
-            switch (vulnerabilityReaderType) {
-                case NEXUS_IQ_VIOLATIONS:
-                    vulnerabilityReader = new NexusIQViolationsReader(vulnOptionValues[1]);
-                    break;
-            }
-            // Set analyzer
-            analyzer = new Analyzer(Arrays.asList(idOptionValues));
-            // Set writer
-            WriterType writerType = WriterType.getTypeForName(writerOptionValues[0]);
-            switch (writerType) {
-                case STANDARD_CSV:
-                    writer = new StandardCsvWriter(writerOptionValues[1]);
-                    break;
-            }
-            // Set stats flag
-            writeStats = commandLine.hasOption("s");
-        } catch (Exception e) {
-            System.out.println("ERROR: Exception occurred while parsing arguments. " + e.getMessage());
-            printHelp();
-            return false;
-        }
-        return true;
-    }
+			// Set dependency reader
+			DependencyReaderType dependencyReaderType = DependencyReaderType
+					.getTypeForName(depOptionValues[0]);
+			switch (dependencyReaderType) {
+				case MAVEN_TREE:
+					dependencyReader = new MavenDependencyTreeReader(depOptionValues[1]);
+					break;
+				case POM_EXPLORER:
+					dependencyReader = new PomExplorerReader(depOptionValues[1]);
+					break;
+			}
+			// Set vulnerability reader
+			VulnerabilityReaderType vulnerabilityReaderType = VulnerabilityReaderType
+					.getTypeForName(vulnOptionValues[0]);
+			switch (vulnerabilityReaderType) {
+				case NEXUS_IQ_VIOLATIONS:
+					vulnerabilityReader = new NexusIQViolationsReader(vulnOptionValues[1]);
+					break;
+				case VERACODE_SCA_ISSUES:
+					vulnerabilityReader = new VeracodeScaIssuesReader(vulnOptionValues[1]);
+					break;
+			}
+			// Set analyzer
+			analyzer = new Analyzer(Arrays.asList(idOptionValues));
+			// Set writer
+			WriterType writerType = WriterType.getTypeForName(writerOptionValues[0]);
+			switch (writerType) {
+				case STANDARD_CSV:
+					writer = new StandardCsvWriter(writerOptionValues[1]);
+					break;
+			}
+			// Set stats flag
+			writeStats = commandLine.hasOption("s");
+		} catch (Exception e) {
+			System.out.println(
+					"ERROR: Exception occurred while parsing arguments. " + e.getMessage());
+			printHelp();
+			return false;
+		}
+		return true;
+	}
 
-    public DependencyReader getDependencyReader() {
-        return dependencyReader;
-    }
+	public DependencyReader getDependencyReader() {
+		return dependencyReader;
+	}
 
-    public VulnerabilityReader getVulnerabilityReader() {
-        return vulnerabilityReader;
-    }
+	public VulnerabilityReader getVulnerabilityReader() {
+		return vulnerabilityReader;
+	}
 
-    public Analyzer getAnalyzer() {
-        return analyzer;
-    }
+	public Analyzer getAnalyzer() {
+		return analyzer;
+	}
 
-    public Writer getWriter() {
-        return writer;
-    }
+	public Writer getWriter() {
+		return writer;
+	}
 
-    public boolean getWriteStats() {
-        return writeStats;
-    }
+	public boolean getWriteStats() {
+		return writeStats;
+	}
 
-    void printHelp() {
-        new HelpFormatter().printHelp("ariadne", options);
-    }
+	void printHelp() {
+		new HelpFormatter().printHelp("ariadne", options);
+	}
 }
