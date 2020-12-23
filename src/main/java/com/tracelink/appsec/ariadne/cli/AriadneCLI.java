@@ -113,6 +113,10 @@ public class AriadneCLI {
 				case POM_EXPLORER:
 					dependencyReader = new PomExplorerReader(depOptionValues[1]);
 					break;
+				default:
+					LOG.error("No dependency reader configured for the type: {}",
+							depOptionValues[0]);
+					return false;
 			}
 			// Set vulnerability reader
 			VulnerabilityReaderType vulnerabilityReaderType = VulnerabilityReaderType
@@ -124,6 +128,11 @@ public class AriadneCLI {
 				case VERACODE_SCA_ISSUES:
 					vulnerabilityReader = new VeracodeScaIssuesReader(vulnOptionValues[1]);
 					break;
+				default:
+					LOG.error("No vulnerability reader configured for the type: {}",
+							vulnOptionValues[0]);
+					return false;
+
 			}
 			// Set analyzer
 			analyzer = new Analyzer(Arrays.asList(idOptionValues));
@@ -133,6 +142,9 @@ public class AriadneCLI {
 				case STANDARD_CSV:
 					writer = new StandardCsvWriter(writerOptionValues[1]);
 					break;
+				default:
+					LOG.error("No writer configured for the type: {}", writerOptionValues[0]);
+					return false;
 			}
 			// Set stats flag
 			writeStats = commandLine.hasOption("s");

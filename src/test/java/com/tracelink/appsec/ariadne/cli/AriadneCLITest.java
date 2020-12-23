@@ -3,6 +3,7 @@ package com.tracelink.appsec.ariadne.cli;
 import com.tracelink.appsec.ariadne.mock.LoggerRule;
 import com.tracelink.appsec.ariadne.read.dependency.PomExplorerReader;
 import com.tracelink.appsec.ariadne.read.vulnerability.NexusIQViolationsReader;
+import com.tracelink.appsec.ariadne.read.vulnerability.VeracodeScaIssuesReader;
 import com.tracelink.appsec.ariadne.write.StandardCsvWriter;
 import java.io.File;
 import org.junit.After;
@@ -50,11 +51,13 @@ public class AriadneCLITest {
 		AriadneCLI cli = new AriadneCLI();
 		cli.parseArgs(new String[]{
 				"-d", "pom-explorer", RESOURCES + "dependency/pom-explorer.csv",
-				"-v", "nexus-iq-vios", RESOURCES + "vulnerability/violations.csv",
+				"-v", "veracode-sca-issues", RESOURCES + "vulnerability/veracode-sca-issues.csv",
 				"-w", "foo", RESOURCES + "output/",
 				"-i", "com.example"
 		});
 
+		Assert.assertTrue(cli.getDependencyReader() instanceof PomExplorerReader);
+		Assert.assertTrue(cli.getVulnerabilityReader() instanceof VeracodeScaIssuesReader);
 		Assert.assertEquals("Exception occurred while parsing arguments: Unknown writer type - foo",
 				loggerRule.getMessages().get(0));
 	}
