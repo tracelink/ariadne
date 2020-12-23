@@ -22,33 +22,33 @@ import java.util.Set;
 
 public interface Artifact extends Comparable<Artifact> {
 
-    String getName();
+	String getName();
 
-    int getTier();
+	int getTier();
 
-    int getConnections();
+	int getConnections();
 
-    int getFindings();
+	int getFindings();
 
-    Set<String> getVersions();
+	Set<String> getVersions();
 
-    boolean isVulnerable();
+	boolean isVulnerable();
 
-    void addFindings(int findings);
+	void addFindings(int findings);
 
-    void addVersion(String version);
+	void addVersion(String version);
 
-    void addParent(String version, Artifact parent);
+	void addParent(String version, Artifact parent);
 
-    void addChild(String version, Artifact child);
+	void addChild(String version, Artifact child);
 
-    void findCycles(List<String> visited);
+	void findCycles(List<String> visited);
 
-    void assignTiers();
+	void assignTiers();
 
-    void assignTier(int tier, String root, String direct, List<String> visited);
+	void assignTier(int tier, String root, String direct, List<String> visited);
 
-    Set<String> getInternalUpgrades();
+	Set<String> getInternalUpgrades();
 
-    Map<String, Set<String>> getExternalUpgrades();
+	Map<String, Set<String>> getExternalUpgrades();
 }

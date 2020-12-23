@@ -17,20 +17,20 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 package com.tracelink.appsec.ariadne.write;
 
 public enum WriterType {
-    STANDARD_CSV("csv");
+	STANDARD_CSV("csv");
 
-    private WriterType(String name) {
-        this.name = name;
-    }
+	WriterType(String name) {
+		this.name = name;
+	}
 
-    private final String name;
+	private final String name;
 
-    public static WriterType getTypeForName(String name) {
-        for (WriterType writerType : WriterType.values()) {
-            if (writerType.name.equals(name)) {
-                return writerType;
-            }
-        }
-        throw new IllegalArgumentException(String.format("Unknown writer type - %s", name));
-    }
+	public static WriterType getTypeForName(String name) {
+		for (WriterType writerType : WriterType.values()) {
+			if (writerType.name.equals(name)) {
+				return writerType;
+			}
+		}
+		throw new IllegalArgumentException(String.format("Unknown writer type - %s", name));
+	}
 }

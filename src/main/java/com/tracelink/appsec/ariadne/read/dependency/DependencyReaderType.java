@@ -17,20 +17,20 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 package com.tracelink.appsec.ariadne.read.dependency;
 
 public enum DependencyReaderType {
-    MAVEN_TREE("mvn-tree"), POM_EXPLORER("pom-explorer");
+	MAVEN_TREE("mvn-tree"), POM_EXPLORER("pom-explorer");
 
-    private DependencyReaderType(String name) {
-        this.name = name;
-    }
+	DependencyReaderType(String name) {
+		this.name = name;
+	}
 
-    private final String name;
+	private final String name;
 
-    public static DependencyReaderType getTypeForName(String name) {
-        for (DependencyReaderType type : DependencyReaderType.values()) {
-            if (type.name.equals(name)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException(String.format("Unknown dependency reader type - %s", name));
-    }
+	public static DependencyReaderType getTypeForName(String name) {
+		for (DependencyReaderType type : DependencyReaderType.values()) {
+			if (type.name.equals(name)) {
+				return type;
+			}
+		}
+		throw new IllegalArgumentException("Unknown dependency reader type - " + name);
+	}
 }

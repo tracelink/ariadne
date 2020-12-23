@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 public class AriadneCLI {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AriadneCLI.class);
+	private static final String CMD_LINE_SYNTAX = "java -jar ariadne.jar -d [dependency reader type] [dependency files] -v [vuln reader type] [vuln files] -w [writer type] [output directory] -i [internal ids] [--stats]";
 	private final Options options;
 
 	private DependencyReader dependencyReader;
@@ -137,7 +138,7 @@ public class AriadneCLI {
 			writeStats = commandLine.hasOption("s");
 		} catch (Exception e) {
 			LOG.error("Exception occurred while parsing arguments: {}", e.getMessage());
-			printHelp();
+			new HelpFormatter().printHelp(CMD_LINE_SYNTAX, options);
 			return false;
 		}
 		return true;
@@ -161,9 +162,5 @@ public class AriadneCLI {
 
 	public boolean getWriteStats() {
 		return writeStats;
-	}
-
-	void printHelp() {
-		new HelpFormatter().printHelp("ariadne", options);
 	}
 }

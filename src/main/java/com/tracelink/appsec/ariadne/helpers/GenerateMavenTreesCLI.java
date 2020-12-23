@@ -17,10 +17,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 package com.tracelink.appsec.ariadne.helpers;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -34,14 +31,14 @@ import org.slf4j.LoggerFactory;
 class GenerateMavenTreesCLI {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GenerateMavenTreesCLI.class);
+	private static final String CMD_LINE_SYNTAX = "maventrees -p [Maven projects directory] -o [output directory] -r [max recursion depth] -d [default option] -s [special options]";
 	private final Options options;
 
 	private File projectsDir;
 	private File outputDir;
 	private int maxDepth = 4;
 	private String defaultOption = "";
-	private Map<String, String> specialOptions = new HashMap<>();
-	private List<String> internalIdentifiers = new ArrayList<>();
+	private Map<String, String> specialOptions;
 
 	GenerateMavenTreesCLI() {
 		Option projectsOption = Option.builder("p")
@@ -78,12 +75,6 @@ class GenerateMavenTreesCLI {
 				.longOpt("special")
 				.hasArgs()
 				.build();
-		Option idOption = Option.builder("i")
-				.required(false)
-				.desc("The strings used to identify your internal projects, i.e. 'com.example'")
-				.longOpt("ids")
-				.hasArgs()
-				.build();
 
 		options = new Options();
 		options.addOption(projectsOption);
@@ -91,7 +82,6 @@ class GenerateMavenTreesCLI {
 		options.addOption(recursionOption);
 		options.addOption(defaultOption);
 		options.addOption(specialOption);
-		options.addOption(idOption);
 	}
 
 	boolean parseArgs(String[] args) {
@@ -116,6 +106,7 @@ class GenerateMavenTreesCLI {
 			// Set special option strings
 			if (commandLine.hasOption("s")) {
 				String[] specialOptionValues = commandLine.getOptionValues("s");
+				specialOptions = new HashMap<>();
 				for (String specialOption : specialOptionValues) {
 					String[] kv = specialOption.split(",");
 					if (kv.length == 2) {
@@ -125,14 +116,9 @@ class GenerateMavenTreesCLI {
 					}
 				}
 			}
-			// Set internal identifiers
-			if (commandLine.hasOption("i")) {
-				internalIdentifiers = Arrays.asList(commandLine.getOptionValues("i"));
-			}
-
 		} catch (Exception e) {
-			LOG.error("Exception occurred: {}", e.getMessage());
-			printHelp();
+			LOG.error("Exception occurred while parsing arguments: {}", e.getMessage());
+			new HelpFormatter().printHelp(CMD_LINE_SYNTAX, options);
 			return false;
 		}
 		return true;
@@ -144,9 +130,9 @@ class GenerateMavenTreesCLI {
 
 	private void setProjectsDir(String projectsPath) {
 		projectsDir = new File(projectsPath);
-		if (!projectsDir.exists() && !projectsDir.isDirectory()) {
+		if (!projectsDir.exists() || !projectsDir.isDirectory()) {
 			throw new IllegalArgumentException(
-					"Please provide a valid path to the projects directory.");
+					"Please provide a valid path to the projects directory");
 		}
 	}
 
@@ -159,7 +145,7 @@ class GenerateMavenTreesCLI {
 		boolean success = outputDir.mkdirs();
 		if (!success && !outputDir.isDirectory()) {
 			throw new IllegalArgumentException(
-					"Please provide a valid path to the output directory.");
+					"Please provide a valid path to the output directory");
 		}
 	}
 
@@ -173,13 +159,5 @@ class GenerateMavenTreesCLI {
 
 	Map<String, String> getSpecialOptions() {
 		return specialOptions;
-	}
-
-	List<String> getInternalIdentifiers() {
-		return internalIdentifiers;
-	}
-
-	void printHelp() {
-		new HelpFormatter().printHelp("maventrees", options);
 	}
 }

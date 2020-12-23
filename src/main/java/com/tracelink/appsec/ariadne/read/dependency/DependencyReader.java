@@ -21,5 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 public interface DependencyReader {
-    List<Map.Entry<String, String>> readDependencies() throws IOException;
+
+	List<Map.Entry<String, String>> readDependencies() throws IOException;
 }

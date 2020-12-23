@@ -17,16 +17,17 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 package com.tracelink.appsec.ariadne.helpers;
 
 public class GenerateMavenTrees {
-    public static void main(String[] args) {
-        GenerateMavenTreesCLI cli = new GenerateMavenTreesCLI();
-        boolean success = cli.parseArgs(args);
-        if (!success) {
-            return;
-        }
 
-        MavenTreeGenerator generator = new MavenTreeGenerator(cli.getOutputDir(), cli.getMaxDepth(),
-                cli.getDefaultOption(), cli.getSpecialOptions(), cli.getInternalIdentifiers());
-        generator.buildTrees(cli.getProjectsDir(), 0);
-        generator.identifyParents(cli.getProjectsDir(), 0);
-    }
+	public static void main(String[] args) {
+		GenerateMavenTreesCLI cli = new GenerateMavenTreesCLI();
+		boolean success = cli.parseArgs(args);
+		if (!success) {
+			return;
+		}
+
+		MavenTreeGenerator generator = new MavenTreeGenerator(cli.getOutputDir(), cli.getMaxDepth(),
+				cli.getDefaultOption(), cli.getSpecialOptions());
+		generator.buildTrees(cli.getProjectsDir(), 0);
+		generator.identifyParents(cli.getProjectsDir(), 0);
+	}
 }

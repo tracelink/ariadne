@@ -17,16 +17,15 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 package com.tracelink.appsec.ariadne.write;
 
 import com.tracelink.appsec.ariadne.model.Artifact;
-
 import java.util.List;
 
 public interface Writer {
 
-    void setArtifacts(List<Artifact> artifacts);
+	void setArtifacts(List<Artifact> artifacts);
 
-    void writeDependencies();
+	void writeDependencies();
 
-    void writeVulnerabilities();
+	void writeVulnerabilities();
 
-    void writeTiers();
+	void writeTiers();
 }

@@ -23,7 +23,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,15 +34,13 @@ class MavenTreeGenerator {
 	private final int maxDepth;
 	private final String defaultOption;
 	private final Map<String, String> specialOptions;
-	private final List<String> internalIdentifiers;
 
 	MavenTreeGenerator(File outputDir, int maxDepth, String defaultOption,
-			Map<String, String> specialOptions, List<String> internalIdentifiers) {
+			Map<String, String> specialOptions) {
 		this.outputDir = outputDir;
 		this.maxDepth = maxDepth;
 		this.defaultOption = defaultOption;
 		this.specialOptions = specialOptions;
-		this.internalIdentifiers = internalIdentifiers;
 	}
 
 	void buildTrees(File file, int depth) {
@@ -60,7 +57,7 @@ class MavenTreeGenerator {
 		// If there is no POM file in this directory, recursively search other directories until max depth reached
 		if (Arrays.stream(innerFiles).noneMatch(f -> f.getName().equals("pom.xml"))) {
 			if (depth == 1) {
-				System.out.println("WARNING: " + file.getAbsolutePath() + " - No POM file");
+				LOG.warn("No POM file: {}", file.getAbsolutePath());
 			}
 			Arrays.stream(innerFiles).forEach(
 					f -> buildTrees(f, depth + 1));
@@ -71,27 +68,26 @@ class MavenTreeGenerator {
 
 			ProcessBuilder processBuilder = new ProcessBuilder()
 					// Uncomment this line to see Maven build output in console
-					//.inheritIO()
+					// .inheritIO()
 					.directory(file);
-			if (options.length() > 0) {
-				processBuilder.command("mvn", "dependency:tree", "-DappendOutput=true",
-						"-DoutputFile=" + outputPath, options);
-			} else {
+			if (options.length() == 0) {
 				processBuilder.command("mvn", "dependency:tree", "-DappendOutput=true",
 						"-DoutputFile=" + outputPath);
+			} else {
+				processBuilder.command("mvn", "dependency:tree", "-DappendOutput=true",
+						"-DoutputFile=" + outputPath, options);
 			}
-
 			try {
 				Process process = processBuilder.start();
 				int exitCode = process.waitFor();
 				// If build failed, add to list of failures
 				if (exitCode != 0 && depth == 1) {
-					System.out.println("WARNING: " + file.getAbsolutePath() + " - Build failed");
+					LOG.warn("Build failed: {}", file.getAbsolutePath());
 				} else {
-					System.out.println("SUCCESS: " + file.getAbsolutePath());
+					LOG.info("Build success: {}", file.getAbsolutePath());
 				}
-			} catch (IOException | InterruptedException e) {
-				System.out.println("WARNING: Exception occurred. " + e.getMessage());
+			} catch (Exception e) {
+				LOG.warn("Exception occurred: {}", e.getMessage());
 			}
 		}
 	}
@@ -112,37 +108,37 @@ class MavenTreeGenerator {
 			String options = specialOptions.getOrDefault(file.getName(), defaultOption);
 
 			String pGroupId = evaluateArtifactExpression(file, "project.parent.groupId", options);
-			if (pGroupId == null
-					|| pGroupId.equals("null object or invalid expression")
-					|| pGroupId.contains("[ERROR]")
-					|| internalIdentifiers.stream().noneMatch(pGroupId::contains)) {
-				return;
-			}
+			if (pGroupId != null && !pGroupId.equals("null object or invalid expression")
+					&& !pGroupId.contains("[ERROR]")) {
+				String pArtifactId = evaluateArtifactExpression(file,
+						"project.parent.artifactId",
+						options);
+				String pVersion = evaluateArtifactExpression(file, "project.parent.version",
+						options);
+				String pName = String.join(":", pGroupId, pArtifactId, pVersion);
 
-			String pArtifactId = evaluateArtifactExpression(file, "project.parent.artifactId",
-					options);
-			String pVersion = evaluateArtifactExpression(file, "project.parent.version", options);
-			String pName = String.join(":", pGroupId, pArtifactId, pVersion);
+				String cGroupId = evaluateArtifactExpression(file, "project.groupId", options);
+				String cArtifactId = evaluateArtifactExpression(file, "project.artifactId",
+						options);
+				String cVersion = evaluateArtifactExpression(file, "project.version", options);
+				String cName = String.join(":", cGroupId, cArtifactId, cVersion);
 
-			String cGroupId = evaluateArtifactExpression(file, "project.groupId", options);
-			String cArtifactId = evaluateArtifactExpression(file, "project.artifactId", options);
-			String cVersion = evaluateArtifactExpression(file, "project.version", options);
-			String cName = String.join(":", cGroupId, cArtifactId, cVersion);
+				LOG.info("{} ---> {}", cName, pName);
 
-			System.out.println(cName + " ---> " + pName);
-
-			// Write parent-child relationship to file
-			String outputPath = outputDir.getAbsolutePath() + "/parents.txt";
-			try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath, true));
-				writer.write(cName);
-				writer.newLine();
-				writer.write("\\- ");
-				writer.write(pName);
-				writer.newLine();
-				writer.close();
-			} catch (IOException e) {
-				throw new RuntimeException(e.getMessage());
+				// Write parent-child relationship to file
+				String outputPath = outputDir.getAbsolutePath() + "/parents.txt";
+				try {
+					BufferedWriter writer = new BufferedWriter(
+							new FileWriter(outputPath, true));
+					writer.write(cName);
+					writer.newLine();
+					writer.write("\\- ");
+					writer.write(pName);
+					writer.newLine();
+					writer.close();
+				} catch (IOException e) {
+					throw new RuntimeException(e.getMessage());
+				}
 			}
 		}
 
@@ -150,10 +146,14 @@ class MavenTreeGenerator {
 	}
 
 	private String evaluateArtifactExpression(File file, String expression, String options) {
-		ProcessBuilder processBuilder = new ProcessBuilder()
-				.directory(file)
-				.command("mvn", "help:evaluate", "-Dexpression=" + expression, "-q",
-						"-DforceStdout", options);
+		ProcessBuilder processBuilder = new ProcessBuilder().directory(file);
+		if (options.length() == 0) {
+			processBuilder.command("mvn", "help:evaluate", "-Dexpression=" + expression, "-q",
+					"-DforceStdout");
+		} else {
+			processBuilder.command("mvn", "help:evaluate", "-Dexpression=" + expression, "-q",
+					"-DforceStdout", options);
+		}
 		String result = null;
 		try {
 			Process process = processBuilder.start();
@@ -162,7 +162,7 @@ class MavenTreeGenerator {
 				result = br.readLine();
 			}
 		} catch (IOException e) {
-			System.out.println("WARNING: Exception occurred. " + e.getMessage());
+			LOG.warn("Exception occurred: {}", e.getMessage());
 		}
 		return result;
 	}

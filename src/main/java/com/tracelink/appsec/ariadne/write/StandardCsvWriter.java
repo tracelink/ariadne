@@ -43,7 +43,7 @@ public class StandardCsvWriter implements Writer {
 		boolean success = outputDir.mkdirs();
 		if (!success && !outputDir.isDirectory()) {
 			throw new IllegalArgumentException(
-					"Please provide a valid path to the output directory.");
+					"Please provide a valid path to the output directory");
 		}
 		outputPath = path;
 	}

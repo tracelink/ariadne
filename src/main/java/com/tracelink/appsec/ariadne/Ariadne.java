@@ -21,7 +21,6 @@ import com.tracelink.appsec.ariadne.cli.AriadneCLI;
 import com.tracelink.appsec.ariadne.read.dependency.DependencyReader;
 import com.tracelink.appsec.ariadne.read.vulnerability.VulnerabilityReader;
 import com.tracelink.appsec.ariadne.write.Writer;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -32,7 +31,6 @@ public class Ariadne {
 	private static final Logger LOG = LoggerFactory.getLogger(Ariadne.class);
 
 	public static void main(String[] args) {
-
 		AriadneCLI cli = new AriadneCLI();
 		boolean success = cli.parseArgs(args);
 		if (!success) {
@@ -46,21 +44,24 @@ public class Ariadne {
 		boolean writeStats = cli.getWriteStats();
 
 		try {
+			LOG.info("Reading dependencies and vulnerabilities");
 			List<Map.Entry<String, String>> dependencies = dependencyReader.readDependencies();
 			List<Map.Entry<String, Integer>> vulnerabilities = vulnerabilityReader
 					.readVulnerabilities();
+			LOG.info("Analyzing data");
 			analyzer.analyzeDependencies(dependencies);
 			analyzer.analyzeVulnerabilities(vulnerabilities);
 			analyzer.analyzeTiers();
 			writer.setArtifacts(analyzer.getArtifacts());
 			if (writeStats) {
+				LOG.info("Writing stats");
 				writer.writeDependencies();
 				writer.writeVulnerabilities();
 			}
+			LOG.info("Writing tiers");
 			writer.writeTiers();
-		} catch (IOException e) {
-			LOG.error("Exception occurred: {}", e.getMessage());
-			e.printStackTrace();
+		} catch (Exception e) {
+			LOG.error("Exception occurred during analysis", e);
 		}
 	}
 }
