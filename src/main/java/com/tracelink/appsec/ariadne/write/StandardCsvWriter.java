@@ -32,6 +32,11 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implementation of a {@link Writer} that writes output to CSV files.
+ *
+ * @author mcool
+ */
 public class StandardCsvWriter implements Writer {
 
 	private static final Logger LOG = LoggerFactory.getLogger(StandardCsvWriter.class);
@@ -48,11 +53,17 @@ public class StandardCsvWriter implements Writer {
 		outputPath = path;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void setArtifacts(List<Artifact> artifacts) {
 		this.artifacts = artifacts;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void writeDependencies() {
 		String fileName = outputPath + "/dependencies.csv";
@@ -67,6 +78,9 @@ public class StandardCsvWriter implements Writer {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void writeVulnerabilities() {
 		String fileName = outputPath + "/vulnerabilities.csv";
@@ -113,6 +127,9 @@ public class StandardCsvWriter implements Writer {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void writeTiers() {
 		String fileName = outputPath + "/tiers.csv";
@@ -147,6 +164,12 @@ public class StandardCsvWriter implements Writer {
 		}
 	}
 
+	/**
+	 * Format the output for an internal upgrades list.
+	 *
+	 * @param internalUpgrades list of internal artifacts to upgrade
+	 * @return string containing all internal upgrades
+	 */
 	private String formatInternalUpgrades(Set<String> internalUpgrades) {
 		if (internalUpgrades.isEmpty()) {
 			return "None";
@@ -159,6 +182,12 @@ public class StandardCsvWriter implements Writer {
 		return sb.toString().trim();
 	}
 
+	/**
+	 * Format the output for an external upgrades map.
+	 *
+	 * @param externalUpgrades map of external artifacts to upgrade
+	 * @return string containing all external upgrades
+	 */
 	private String formatExternalUpgrades(Map<String, Set<String>> externalUpgrades) {
 		if (externalUpgrades.isEmpty()) {
 			return "None";

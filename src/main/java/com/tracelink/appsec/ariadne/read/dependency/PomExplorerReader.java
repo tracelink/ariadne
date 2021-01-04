@@ -27,6 +27,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Implementation of a {@link DependencyReader} that parses Pom Explorer data from a CSV file.
+ *
+ * @author mcool
+ */
 public class PomExplorerReader implements DependencyReader {
 
 	private final File file;
@@ -38,6 +43,9 @@ public class PomExplorerReader implements DependencyReader {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<Map.Entry<String, String>> readDependencies() throws IOException {
 		List<Map.Entry<String, String>> dependencies = new ArrayList<>();

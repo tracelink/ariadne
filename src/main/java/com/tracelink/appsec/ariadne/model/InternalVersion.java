@@ -20,6 +20,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+/**
+ * Represents the version of an internal artifact. Keeps track of dependencies of or upon a
+ * particular version of an artifact.
+ */
 class InternalVersion implements Comparable<InternalVersion> {
 
 	private final String version;
@@ -30,31 +34,66 @@ class InternalVersion implements Comparable<InternalVersion> {
 		this.version = version;
 	}
 
+	/**
+	 * Gets a string representing the version of an artifact.
+	 *
+	 * @return version string
+	 */
 	public String getVersion() {
 		return version;
 	}
 
-	int getConnections() {
+	/**
+	 * Gets the number of artifacts that depend on this version.
+	 *
+	 * @return number of connections
+	 */
+	public int getConnections() {
 		return parents.size();
 	}
 
-	boolean hasChild(String child) {
+	/**
+	 * Determines whether this version depends on the given child artifact.
+	 *
+	 * @param child string representing a child artifact
+	 * @return true if this version depends on the given child artifact, false otherwise
+	 */
+	public boolean hasChild(String child) {
 		return children.stream().anyMatch(a -> a.getName().equals(child));
 	}
 
-	void addParent(Artifact parent) {
+	/**
+	 * Adds the given parent {@link Artifact} to this version.
+	 *
+	 * @param parent the parent artifact
+	 */
+	public void addParent(Artifact parent) {
 		parents.add(parent);
 	}
 
-	void addChild(Artifact child) {
+	/**
+	 * Adds the given child {@link Artifact} to this version.
+	 *
+	 * @param child the child artifact
+	 */
+	public void addChild(Artifact child) {
 		children.add(child);
 	}
 
-	void assignTier(int tier, String root, String direct, List<String> visited,
-			List<Artifact> updated,
-			Set<String> cycles) {
+	/**
+	 * Assigns a tier to all parents of this version.
+	 *
+	 * @param tier    current tier
+	 * @param root    root artifact of the vulnerability
+	 * @param direct  direct vulnerable dependency of this artifact
+	 * @param visited list of previously visited artifacts
+	 * @param updated list of parents that have already been updated
+	 * @param cycles  set of artifacts that are in a cycle to determine which tier to assign
+	 */
+	public void assignTier(int tier, String root, String direct, List<String> visited,
+			List<Artifact> updated, Set<String> cycles) {
 		parents.forEach(parent -> {
-			// Don't visit the ones updated in other versions of this artifact
+			// Don't revisit the ones updated by other versions of this artifact
 			if (!updated.contains(parent)) {
 				updated.add(parent);
 				parent.assignTier(cycles.contains(parent.getName()) ? tier : tier + 1, root, direct,
@@ -63,7 +102,13 @@ class InternalVersion implements Comparable<InternalVersion> {
 		});
 	}
 
-	void findCycles(List<String> visited, List<Artifact> updated) {
+	/**
+	 * Identifies cycles for all parents of this version.
+	 *
+	 * @param visited list of previously visited artifacts
+	 * @param updated list of parents that have already been updated
+	 */
+	public void findCycles(List<String> visited, List<Artifact> updated) {
 		for (Artifact parent : parents) {
 			// Don't visit the ones updated in other versions of this artifact
 			if (!updated.contains(parent)) {
@@ -73,6 +118,9 @@ class InternalVersion implements Comparable<InternalVersion> {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int compareTo(InternalVersion o) {
 		String[] thisComponents = version.split("-", 2);
@@ -94,6 +142,14 @@ class InternalVersion implements Comparable<InternalVersion> {
 		}
 	}
 
+	/**
+	 * Helper to compare version numbers and determine which of the two given versions is newer.
+	 *
+	 * @param s1 first version string to compare
+	 * @param s2 second version string to compare
+	 * @return less than zero if the first version comes before the second version, zero if the two
+	 * versions match, and greater than zero if the first version comes after the second version
+	 */
 	private int compareVersionNum(String s1, String s2) {
 		String versionNumRegex = "\\d+(\\.\\d+)*";
 		if (s1.matches(versionNumRegex) && s2.matches(versionNumRegex)) {
@@ -117,6 +173,15 @@ class InternalVersion implements Comparable<InternalVersion> {
 		}
 	}
 
+	/**
+	 * Helper to compare build numbers that are attached to version strings.
+	 *
+	 * @param s1 first build number to compare
+	 * @param s2 second build number to compare
+	 * @return less than zero if the first build number comes before the second build number, zero
+	 * if the two build numbers match, and greater than zero if the first build number comes after
+	 * the second build number
+	 */
 	private int compareBuildNum(String s1, String s2) {
 		if (s1.equals(s2)) {
 			return 0;

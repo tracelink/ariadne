@@ -28,6 +28,11 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of a {@link DependencyReader} that parses Maven dependency trees.
+ *
+ * @author mcool
+ */
 public class MavenDependencyTreeReader implements DependencyReader {
 
 	private final File[] files;
@@ -47,6 +52,9 @@ public class MavenDependencyTreeReader implements DependencyReader {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<Map.Entry<String, String>> readDependencies() throws IOException {
 		List<Map.Entry<String, String>> dependencies = new ArrayList<>();
@@ -60,6 +68,12 @@ public class MavenDependencyTreeReader implements DependencyReader {
 		return dependencies;
 	}
 
+	/**
+	 * Parses the given Maven tree, which is stored as a list of lines
+	 *
+	 * @param tree the Maven dependency tree to parse
+	 * @return list of dependency entries
+	 */
 	private List<Map.Entry<String, String>> readMavenTree(List<String> tree) {
 		List<Map.Entry<String, String>> dependencies = new ArrayList<>();
 		String parent = null;
@@ -94,6 +108,13 @@ public class MavenDependencyTreeReader implements DependencyReader {
 		return dependencies;
 	}
 
+	/**
+	 * Formats the artifact name to contain only the groupId, artifactId and version separated by
+	 * colons.
+	 *
+	 * @param artifact the artifact name to format
+	 * @return formatted artifact name
+	 */
 	private String formatArtifactName(String artifact) {
 		String[] components = artifact.split(":");
 		String[] updatedComponents = new String[3];

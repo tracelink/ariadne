@@ -16,15 +16,28 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.read.dependency;
 
+/**
+ * Enum defining the valid dependency reader types. Each type corresponds to a single {@link
+ * DependencyReader} implementation.
+ *
+ * @author mcool
+ */
 public enum DependencyReaderType {
 	MAVEN_TREE("mvn-tree"), POM_EXPLORER("pom-explorer");
+
+	private final String name;
 
 	DependencyReaderType(String name) {
 		this.name = name;
 	}
 
-	private final String name;
-
+	/**
+	 * Gets the {@link DependencyReaderType} with the given name, if it exists.
+	 *
+	 * @param name name of the dependency reader type to get
+	 * @return dependency reader type with the given name
+	 * @throws IllegalArgumentException if no such dependency reader type exists
+	 */
 	public static DependencyReaderType getTypeForName(String name) {
 		for (DependencyReaderType type : DependencyReaderType.values()) {
 			if (type.name.equals(name)) {

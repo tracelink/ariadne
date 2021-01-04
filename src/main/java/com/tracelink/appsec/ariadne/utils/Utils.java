@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Utilities class for formatting and parsing artifact names.
+ */
 public class Utils {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
@@ -29,10 +32,23 @@ public class Utils {
 	 * Assume bad formatting
 	 */
 
+	/**
+	 * Gets the full, formatted name of an artifact, including its version
+	 *
+	 * @param artifact artifact name to correctly format
+	 * @return full, formatted artifact name
+	 */
 	public static String getFullName(String artifact) {
 		return String.join(":", formatArtifact(artifact));
 	}
 
+	/**
+	 * Parses the given artifact name into groupId, artifactId, and version components, and adds all
+	 * components to an array.
+	 *
+	 * @param artifact artifact name to parse and format
+	 * @return array of artifact name components
+	 */
 	private static String[] formatArtifact(String artifact) {
 		String[] components = Arrays.stream(artifact.split(":")).map(String::trim)
 				.toArray(String[]::new);
@@ -80,14 +96,33 @@ public class Utils {
 	 * Assume good formatting (groupId:artifactId:version)
 	 */
 
+	/**
+	 * Gets the groupId and artifactId of the given artifact name, removing any version information.
+	 *
+	 * @param artifact artifact to get the name of
+	 * @return truncated artifact name
+	 */
 	public static String getArtifactName(String artifact) {
 		return artifact.substring(0, artifact.lastIndexOf(":"));
 	}
 
+	/**
+	 * Gets the version of the given artifact name.
+	 *
+	 * @param artifact artifact to get the version of
+	 * @return artifact version
+	 */
 	public static String getVersion(String artifact) {
 		return artifact.substring(artifact.lastIndexOf(":") + 1);
 	}
 
+	/**
+	 * Splits the given artifact name along colons and dashes to produce a more human-readable
+	 * display name.
+	 *
+	 * @param artifact artifact to get the display name of
+	 * @return artifact display name
+	 */
 	public static String getDisplayName(String artifact) {
 		return Arrays.stream(artifact.split(":")[1].split("-"))
 				.map(n -> n.substring(0, 1).toUpperCase() + n.substring(1))

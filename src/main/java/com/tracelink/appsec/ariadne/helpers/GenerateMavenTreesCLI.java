@@ -28,7 +28,14 @@ import org.apache.commons.cli.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class GenerateMavenTreesCLI {
+/**
+ * Command line interface for Maven dependency tree generation. Reads arguments from the command
+ * line and parses them into usable parameters that can be passed to the {@link GenerateMavenTrees}
+ * class.
+ *
+ * @author mcool
+ */
+public class GenerateMavenTreesCLI {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GenerateMavenTreesCLI.class);
 	private static final String CMD_LINE_SYNTAX = "maventrees -p [Maven projects directory] -o [output directory] -r [max recursion depth] -d [default option] -s [special options]";
@@ -40,7 +47,7 @@ class GenerateMavenTreesCLI {
 	private String defaultOption = "";
 	private Map<String, String> specialOptions;
 
-	GenerateMavenTreesCLI() {
+	public GenerateMavenTreesCLI() {
 		Option projectsOption = Option.builder("p")
 				.required()
 				.desc("Path to the directory containing all Maven projects")
@@ -84,7 +91,14 @@ class GenerateMavenTreesCLI {
 		options.addOption(specialOption);
 	}
 
-	boolean parseArgs(String[] args) {
+	/**
+	 * Parses arguments from the command line. If arguments are invalid, logs an error along with
+	 * the command line syntax for the Maven tree generator.
+	 *
+	 * @param args array of arguments passed from the command line
+	 * @return true if all required arguments are provided and valid, false otherwise
+	 */
+	public boolean parseArgs(String[] args) {
 		CommandLineParser parser = new DefaultParser();
 		CommandLine commandLine;
 
@@ -124,10 +138,21 @@ class GenerateMavenTreesCLI {
 		return true;
 	}
 
-	File getProjectsDir() {
+	/**
+	 * Gets the file for the projects directory as specified by the command line arguments.
+	 *
+	 * @return file representing the projects directory
+	 */
+	public File getProjectsDir() {
 		return projectsDir;
 	}
 
+	/**
+	 * Sets the projects directory file using the given path and ensures it is a valid directory.
+	 *
+	 * @param projectsPath path to the projects directory
+	 * @throws IllegalArgumentException if the path is invalid
+	 */
 	private void setProjectsDir(String projectsPath) {
 		projectsDir = new File(projectsPath);
 		if (!projectsDir.exists() || !projectsDir.isDirectory()) {
@@ -136,10 +161,21 @@ class GenerateMavenTreesCLI {
 		}
 	}
 
-	File getOutputDir() {
+	/**
+	 * Gets the file for the output directory as specified by the command line arguments.
+	 *
+	 * @return file representing the output directory
+	 */
+	public File getOutputDir() {
 		return outputDir;
 	}
 
+	/**
+	 * Sets the output directory file using the given path and ensures it is a valid directory.
+	 *
+	 * @param outputPath path to the output directory
+	 * @throws IllegalArgumentException if the path is invalid
+	 */
 	private void setOutputDir(String outputPath) {
 		outputDir = new File(outputPath);
 		boolean success = outputDir.mkdirs();
@@ -149,15 +185,33 @@ class GenerateMavenTreesCLI {
 		}
 	}
 
-	int getMaxDepth() {
+	/**
+	 * Gets the max depth of recursion for the projects directory as specified by the command line
+	 * arguments.
+	 *
+	 * @return max depth of recursion for the projects directory
+	 */
+	public int getMaxDepth() {
 		return maxDepth;
 	}
 
-	String getDefaultOption() {
+	/**
+	 * Gets the default option string for the Maven dependency tree command as specified by the
+	 * command line arguments.
+	 *
+	 * @return default option string for the Maven dependency tree command
+	 */
+	public String getDefaultOption() {
 		return defaultOption;
 	}
 
-	Map<String, String> getSpecialOptions() {
+	/**
+	 * Gets the special option strings map for the Maven dependency tree command as specified by the
+	 * command line arguments.
+	 *
+	 * @return special option strings map for the Maven dependency tree command
+	 */
+	public Map<String, String> getSpecialOptions() {
 		return specialOptions;
 	}
 }

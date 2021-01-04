@@ -26,10 +26,21 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Generates a tiered upgrade path for given project dependency and vulnerability data. Can be
+ * configured to print additional statistics about dependencies and vulnerabilities.
+ *
+ * @author mcool
+ */
 public class Ariadne {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Ariadne.class);
 
+	/**
+	 * Main method to generate tiered upgrade path for dependency and vulnerability data.
+	 *
+	 * @param args the command line arguments
+	 */
 	public static void main(String[] args) {
 		AriadneCLI cli = new AriadneCLI();
 		boolean success = cli.parseArgs(args);
@@ -48,10 +59,12 @@ public class Ariadne {
 			List<Map.Entry<String, String>> dependencies = dependencyReader.readDependencies();
 			List<Map.Entry<String, Integer>> vulnerabilities = vulnerabilityReader
 					.readVulnerabilities();
+
 			LOG.info("Analyzing data");
 			analyzer.analyzeDependencies(dependencies);
 			analyzer.analyzeVulnerabilities(vulnerabilities);
 			analyzer.analyzeTiers();
+
 			writer.setArtifacts(analyzer.getArtifacts());
 			if (writeStats) {
 				LOG.info("Writing stats");

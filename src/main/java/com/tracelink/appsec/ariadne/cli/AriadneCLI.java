@@ -16,6 +16,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.cli;
 
+import com.tracelink.appsec.ariadne.Ariadne;
 import com.tracelink.appsec.ariadne.analyze.Analyzer;
 import com.tracelink.appsec.ariadne.read.dependency.DependencyReader;
 import com.tracelink.appsec.ariadne.read.dependency.DependencyReaderType;
@@ -38,6 +39,12 @@ import org.apache.commons.cli.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Command line interface for Ariadne. Reads arguments from the command line and parses them into
+ * usable parameters that can be passed to the {@link Ariadne} class.
+ *
+ * @author mcool
+ */
 public class AriadneCLI {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AriadneCLI.class);
@@ -92,12 +99,19 @@ public class AriadneCLI {
 		options.addOption(statsOption);
 	}
 
+	/**
+	 * Parses arguments from the command line. If arguments are invalid, logs an error along with
+	 * the command line syntax for Ariadne.
+	 *
+	 * @param args array of arguments passed from the command line
+	 * @return true if all required arguments are provided and valid, false otherwise
+	 */
 	public boolean parseArgs(String[] args) {
 		CommandLineParser parser = new DefaultParser();
 		CommandLine commandLine;
 		try {
 			commandLine = parser.parse(options, args);
-
+			// Get command line option values
 			String[] depOptionValues = commandLine.getOptionValues("d");
 			String[] vulnOptionValues = commandLine.getOptionValues("v");
 			String[] writerOptionValues = commandLine.getOptionValues("w");
@@ -156,22 +170,48 @@ public class AriadneCLI {
 		return true;
 	}
 
+	/**
+	 * Gets the {@link DependencyReader} specified by the command line arguments.
+	 *
+	 * @return a dependency reader
+	 */
 	public DependencyReader getDependencyReader() {
 		return dependencyReader;
 	}
 
+	/**
+	 * Gets the {@link VulnerabilityReader} specified by the command line arguments.
+	 *
+	 * @return a vulnerability reader
+	 */
 	public VulnerabilityReader getVulnerabilityReader() {
 		return vulnerabilityReader;
 	}
 
+	/**
+	 * Gets an {@link Analyzer} configured with the internal identifiers specified by the command
+	 * line arguments.
+	 *
+	 * @return an analyzer
+	 */
 	public Analyzer getAnalyzer() {
 		return analyzer;
 	}
 
+	/**
+	 * Gets the {@link Writer} specified by the command line arguments.
+	 *
+	 * @return a dependency reader
+	 */
 	public Writer getWriter() {
 		return writer;
 	}
 
+	/**
+	 * Gets the {@code writeStats} flag as specified by the command line arguments.
+	 *
+	 * @return a boolean indicating whether extra stats should be written to output files
+	 */
 	public boolean getWriteStats() {
 		return writeStats;
 	}

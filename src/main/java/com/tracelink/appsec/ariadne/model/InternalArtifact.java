@@ -27,6 +27,12 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.IntStream;
 
+/**
+ * Represents an internal, or in-house artifact. Contains multiple versions and can be assigned to
+ * a tier.
+ *
+ * @author mcool
+ */
 public class InternalArtifact implements Artifact {
 
 	private final String artifactName;
@@ -41,26 +47,41 @@ public class InternalArtifact implements Artifact {
 		versions.add(new InternalVersion(Utils.getVersion(artifact)));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getName() {
 		return artifactName;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int getTier() {
 		return tier;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int getConnections() {
 		return versions.stream().mapToInt(InternalVersion::getConnections).sum();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int getFindings() {
 		throw new UnsupportedOperationException("Cannot get findings for an internal artifact");
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Set<String> getVersions() {
 		Set<String> versionNumbers = new TreeSet<>();
@@ -68,16 +89,25 @@ public class InternalArtifact implements Artifact {
 		return versionNumbers;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean isVulnerable() {
 		return false;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void addFindings(int findings) {
 		throw new UnsupportedOperationException("Cannot add findings to an internal artifact");
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void addVersion(String version) {
 		for (InternalVersion v : versions) {
@@ -90,6 +120,9 @@ public class InternalArtifact implements Artifact {
 		versions.add(new InternalVersion(version));
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void addParent(String version, Artifact parent) {
 		for (InternalVersion v : versions) {
@@ -101,6 +134,9 @@ public class InternalArtifact implements Artifact {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void addChild(String version, Artifact child) {
 		for (InternalVersion v : versions) {
@@ -112,6 +148,9 @@ public class InternalArtifact implements Artifact {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void findCycles(List<String> visited) {
 		if (visited.size() == 0 || versions.first().hasChild(visited.get(visited.size() - 1))) {
@@ -128,12 +167,18 @@ public class InternalArtifact implements Artifact {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void assignTiers() {
 		throw new UnsupportedOperationException(
 				"Cannot start assigning tiers from an internal artifact");
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void assignTier(int tier, String root, String child, List<String> visited) {
 		// Only do something if the child is a child of the most recent version of this artifact
@@ -168,16 +213,25 @@ public class InternalArtifact implements Artifact {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Set<String> getInternalUpgrades() {
 		return Collections.unmodifiableSet(internalUpgrades);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Map<String, Set<String>> getExternalUpgrades() {
 		return Collections.unmodifiableMap(externalUpgrades);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int compareTo(Artifact o) {
 		return artifactName.compareTo(o.getName());

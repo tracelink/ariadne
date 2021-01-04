@@ -24,6 +24,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+/**
+ * Represents an external, or third-party artifact. Contains only a single version and cannot be
+ * assigned to a tier.
+ *
+ * @author mcool
+ */
 public class ExternalArtifact implements Artifact {
 
 	private final String fullName;
@@ -37,46 +43,73 @@ public class ExternalArtifact implements Artifact {
 		this.version = Utils.getVersion(artifact);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getName() {
 		return fullName;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int getTier() {
 		return -1;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int getConnections() {
 		return parents.size();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int getFindings() {
 		return findings;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Set<String> getVersions() {
 		return Collections.singleton(version);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean isVulnerable() {
 		return findings > 0;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void addFindings(int findings) {
 		this.findings += findings;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void addVersion(String version) {
 		throw new UnsupportedOperationException("Cannot add a version to an external artifact");
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void addParent(String version, Artifact parent) {
 		if (this.version.equals(version)) {
@@ -84,6 +117,9 @@ public class ExternalArtifact implements Artifact {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void addChild(String version, Artifact child) {
 		if (this.version.equals(version)) {
@@ -91,16 +127,25 @@ public class ExternalArtifact implements Artifact {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void findCycles(List<String> visited) {
 		throw new UnsupportedOperationException("Cannot find cycles for an external artifact");
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void assignTiers() {
 		assignTier(0, fullName, fullName, new ArrayList<>());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void assignTier(int tier, String root, String direct, List<String> visited) {
 		if (visited.contains(fullName)) {
@@ -113,18 +158,27 @@ public class ExternalArtifact implements Artifact {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Set<String> getInternalUpgrades() {
 		throw new UnsupportedOperationException(
 				"Cannot get internal upgrades for an external artifact");
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Map<String, Set<String>> getExternalUpgrades() {
 		throw new UnsupportedOperationException(
 				"Cannot get external upgrades for an external artifact");
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int compareTo(Artifact o) {
 		return fullName.compareTo(o.getName());
