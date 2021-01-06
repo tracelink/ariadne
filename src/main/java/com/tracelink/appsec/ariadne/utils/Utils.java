@@ -28,12 +28,10 @@ public class Utils {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
 
-	/*
-	 * Assume bad formatting
-	 */
-
 	/**
-	 * Gets the full, formatted name of an artifact, including its version
+	 * Gets the full name of the given artifact, formatted as {@code groupId:artifactId:version}.
+	 * If the given artifact is not in the correct format already, makes a best effort attempt to
+	 * convert it into the correct format.
 	 *
 	 * @param artifact artifact name to correctly format
 	 * @return full, formatted artifact name
@@ -43,8 +41,9 @@ public class Utils {
 	}
 
 	/**
-	 * Parses the given artifact name into groupId, artifactId, and version components, and adds all
-	 * components to an array.
+	 * Parses the given artifact name into groupId, artifactId, and version components, and adds
+	 * the three components to an array. If the given artifact is not in the format {@code
+	 * groupId:artifactId:version}, makes a best effort attempt to parse each component.
 	 *
 	 * @param artifact artifact name to parse and format
 	 * @return array of artifact name components
@@ -92,12 +91,9 @@ public class Utils {
 		return components;
 	}
 
-	/*
-	 * Assume good formatting (groupId:artifactId:version)
-	 */
-
 	/**
 	 * Gets the groupId and artifactId of the given artifact name, removing any version information.
+	 * Assumes that the given artifact is already in the format {@code groupId:artifactId:version}.
 	 *
 	 * @param artifact artifact to get the name of
 	 * @return truncated artifact name
@@ -107,7 +103,8 @@ public class Utils {
 	}
 
 	/**
-	 * Gets the version of the given artifact name.
+	 * Gets the version of the given artifact name. Assumes that the given artifact is already in
+	 * the format {@code groupId:artifactId:version}.
 	 *
 	 * @param artifact artifact to get the version of
 	 * @return artifact version
@@ -118,7 +115,8 @@ public class Utils {
 
 	/**
 	 * Splits the given artifact name along colons and dashes to produce a more human-readable
-	 * display name.
+	 * display name. Assumes that the given artifact is already in the format {@code
+	 * groupId:artifactId:version}.
 	 *
 	 * @param artifact artifact to get the display name of
 	 * @return artifact display name
