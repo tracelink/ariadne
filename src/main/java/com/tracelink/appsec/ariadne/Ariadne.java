@@ -21,41 +21,60 @@ import com.tracelink.appsec.ariadne.cli.AriadneCLI;
 import com.tracelink.appsec.ariadne.read.dependency.DependencyReader;
 import com.tracelink.appsec.ariadne.read.vulnerability.VulnerabilityReader;
 import com.tracelink.appsec.ariadne.write.Writer;
-
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Generates a tiered upgrade path for given project dependency and vulnerability data. Can be
+ * configured to print additional statistics about dependencies and vulnerabilities.
+ *
+ * @author mcool
+ */
 public class Ariadne {
-    public static void main(String[] args) {
 
-        AriadneCLI cli = new AriadneCLI();
-        boolean success = cli.parseArgs(args);
-        if (!success) {
-            return;
-        }
+	private static final Logger LOG = LoggerFactory.getLogger(Ariadne.class);
 
-        DependencyReader dependencyReader = cli.getDependencyReader();
-        VulnerabilityReader vulnerabilityReader = cli.getVulnerabilityReader();
-        Analyzer analyzer = cli.getAnalyzer();
-        Writer writer = cli.getWriter();
-        boolean writeStats = cli.getWriteStats();
+	/**
+	 * Main method to generate tiered upgrade path for dependency and vulnerability data.
+	 *
+	 * @param args the command line arguments
+	 */
+	public static void main(String[] args) {
+		AriadneCLI cli = new AriadneCLI();
+		boolean success = cli.parseArgs(args);
+		if (!success) {
+			return;
+		}
 
-        try {
-            List<Map.Entry<String, String>> dependencies = dependencyReader.readDependencies();
-            List<Map.Entry<String, Integer>> vulnerabilities = vulnerabilityReader.readVulnerabilities();
-            analyzer.analyzeDependencies(dependencies);
-            analyzer.analyzeVulnerabilities(vulnerabilities);
-            analyzer.analyzeTiers();
-            writer.setArtifacts(analyzer.getArtifacts());
-            if (writeStats) {
-                writer.writeDependencies();
-                writer.writeVulnerabilities();
-            }
-            writer.writeTiers();
-        } catch (IOException e) {
-            System.out.println("ERROR: Exception occurred. " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+		DependencyReader dependencyReader = cli.getDependencyReader();
+		VulnerabilityReader vulnerabilityReader = cli.getVulnerabilityReader();
+		Analyzer analyzer = cli.getAnalyzer();
+		Writer writer = cli.getWriter();
+		boolean writeStats = cli.getWriteStats();
+
+		try {
+			LOG.info("Reading dependencies and vulnerabilities");
+			List<Map.Entry<String, String>> dependencies = dependencyReader.readDependencies();
+			List<Map.Entry<String, Integer>> vulnerabilities = vulnerabilityReader
+					.readVulnerabilities();
+
+			LOG.info("Analyzing data");
+			analyzer.analyzeDependencies(dependencies);
+			analyzer.analyzeVulnerabilities(vulnerabilities);
+			analyzer.analyzeTiers();
+
+			writer.setArtifacts(analyzer.getArtifacts());
+			if (writeStats) {
+				LOG.info("Writing stats");
+				writer.writeDependencies();
+				writer.writeVulnerabilities();
+			}
+			LOG.info("Writing tiers");
+			writer.writeTiers();
+		} catch (Exception e) {
+			LOG.error("Exception occurred during analysis", e);
+		}
+	}
 }

@@ -16,6 +16,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.cli;
 
+import com.tracelink.appsec.ariadne.Ariadne;
 import com.tracelink.appsec.ariadne.analyze.Analyzer;
 import com.tracelink.appsec.ariadne.read.dependency.DependencyReader;
 import com.tracelink.appsec.ariadne.read.dependency.DependencyReaderType;
@@ -35,16 +36,26 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Command line interface for Ariadne. Reads arguments from the command line and parses them into
+ * usable parameters that can be passed to the {@link Ariadne} class.
+ *
+ * @author mcool
+ */
 public class AriadneCLI {
+
+	private static final Logger LOG = LoggerFactory.getLogger(AriadneCLI.class);
+	private static final String CMD_LINE_SYNTAX = "java -jar ariadne.jar -d [dependency reader type] [dependency files] -v [vuln reader type] [vuln files] -w [writer type] [output directory] -i [internal ids] [--stats]";
+	private final Options options;
 
 	private DependencyReader dependencyReader;
 	private VulnerabilityReader vulnerabilityReader;
 	private Analyzer analyzer;
 	private Writer writer;
 	private boolean writeStats;
-
-	private final Options options;
 
 	public AriadneCLI() {
 		Option depOption = Option.builder("d")
@@ -88,12 +99,19 @@ public class AriadneCLI {
 		options.addOption(statsOption);
 	}
 
+	/**
+	 * Parses arguments from the command line. If arguments are invalid, logs an error along with
+	 * the command line syntax for Ariadne.
+	 *
+	 * @param args array of arguments passed from the command line
+	 * @return true if all required arguments are provided and valid, false otherwise
+	 */
 	public boolean parseArgs(String[] args) {
 		CommandLineParser parser = new DefaultParser();
 		CommandLine commandLine;
 		try {
 			commandLine = parser.parse(options, args);
-
+			// Get command line option values
 			String[] depOptionValues = commandLine.getOptionValues("d");
 			String[] vulnOptionValues = commandLine.getOptionValues("v");
 			String[] writerOptionValues = commandLine.getOptionValues("w");
@@ -109,6 +127,10 @@ public class AriadneCLI {
 				case POM_EXPLORER:
 					dependencyReader = new PomExplorerReader(depOptionValues[1]);
 					break;
+				default:
+					LOG.error("No dependency reader configured for the type: {}",
+							depOptionValues[0]);
+					return false;
 			}
 			// Set vulnerability reader
 			VulnerabilityReaderType vulnerabilityReaderType = VulnerabilityReaderType
@@ -120,6 +142,11 @@ public class AriadneCLI {
 				case VERACODE_SCA_ISSUES:
 					vulnerabilityReader = new VeracodeScaIssuesReader(vulnOptionValues[1]);
 					break;
+				default:
+					LOG.error("No vulnerability reader configured for the type: {}",
+							vulnOptionValues[0]);
+					return false;
+
 			}
 			// Set analyzer
 			analyzer = new Analyzer(Arrays.asList(idOptionValues));
@@ -129,39 +156,63 @@ public class AriadneCLI {
 				case STANDARD_CSV:
 					writer = new StandardCsvWriter(writerOptionValues[1]);
 					break;
+				default:
+					LOG.error("No writer configured for the type: {}", writerOptionValues[0]);
+					return false;
 			}
 			// Set stats flag
 			writeStats = commandLine.hasOption("s");
 		} catch (Exception e) {
-			System.out.println(
-					"ERROR: Exception occurred while parsing arguments. " + e.getMessage());
-			printHelp();
+			LOG.error("Exception occurred while parsing arguments: {}", e.getMessage());
+			new HelpFormatter().printHelp(CMD_LINE_SYNTAX, options);
 			return false;
 		}
 		return true;
 	}
 
+	/**
+	 * Gets the {@link DependencyReader} specified by the command line arguments.
+	 *
+	 * @return a dependency reader
+	 */
 	public DependencyReader getDependencyReader() {
 		return dependencyReader;
 	}
 
+	/**
+	 * Gets the {@link VulnerabilityReader} specified by the command line arguments.
+	 *
+	 * @return a vulnerability reader
+	 */
 	public VulnerabilityReader getVulnerabilityReader() {
 		return vulnerabilityReader;
 	}
 
+	/**
+	 * Gets an {@link Analyzer} configured with the internal identifiers specified by the command
+	 * line arguments.
+	 *
+	 * @return an analyzer
+	 */
 	public Analyzer getAnalyzer() {
 		return analyzer;
 	}
 
+	/**
+	 * Gets the {@link Writer} specified by the command line arguments.
+	 *
+	 * @return a dependency reader
+	 */
 	public Writer getWriter() {
 		return writer;
 	}
 
+	/**
+	 * Gets the {@code writeStats} flag as specified by the command line arguments.
+	 *
+	 * @return a boolean indicating whether extra stats should be written to output files
+	 */
 	public boolean getWriteStats() {
 		return writeStats;
-	}
-
-	void printHelp() {
-		new HelpFormatter().printHelp("ariadne", options);
 	}
 }

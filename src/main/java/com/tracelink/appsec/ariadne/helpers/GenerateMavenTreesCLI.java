@@ -16,165 +16,202 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.helpers;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+/**
+ * Command line interface for Maven dependency tree generation. Reads arguments from the command
+ * line and parses them into usable parameters that can be passed to the {@link GenerateMavenTrees}
+ * class.
+ *
+ * @author mcool
+ */
+public class GenerateMavenTreesCLI {
 
-class GenerateMavenTreesCLI {
-    private File projectsDir;
-    private File outputDir;
-    private int maxDepth = 4;
-    private String defaultOption = "";
-    private Map<String, String> specialOptions = new HashMap<>();
-    private List<String> internalIdentifiers = new ArrayList<>();
+	private static final Logger LOG = LoggerFactory.getLogger(GenerateMavenTreesCLI.class);
+	private static final String CMD_LINE_SYNTAX = "maventrees -p [Maven projects directory] -o [output directory] -r [max recursion depth] -d [default option] -s [special options]";
+	private final Options options;
 
-    private Options options;
+	private File projectsDir;
+	private File outputDir;
+	private int maxDepth = 4;
+	private String defaultOption = "";
+	private Map<String, String> specialOptions;
 
-    GenerateMavenTreesCLI() {
-        Option projectsOption = Option.builder("p")
-                .required()
-                .desc("Path to the directory containing all Maven projects")
-                .longOpt("proj")
-                .hasArgs()
-                .numberOfArgs(1)
-                .build();
-        Option outputOption = Option.builder("o")
-                .required()
-                .desc("Path to the output directory")
-                .longOpt("out")
-                .hasArgs()
-                .numberOfArgs(1)
-                .build();
-        Option recursionOption = Option.builder("r")
-                .required(false)
-                .desc("Max depth of recursion")
-                .longOpt("recursion")
-                .hasArgs()
-                .numberOfArgs(1)
-                .build();
-        Option defaultOption = Option.builder("d")
-                .required(false)
-                .desc("The default option string to be used when building dependency trees, i.e. '-Dversion=foo")
-                .longOpt("default")
-                .hasArg()
-                .numberOfArgs(1)
-                .build();
-        Option specialOption = Option.builder("s")
-                .required(false)
-                .desc("Special option strings to be used when building dependency trees, i.e. 'com.example.api,-Dversion=bar'")
-                .longOpt("special")
-                .hasArgs()
-                .build();
-        Option idOption = Option.builder("i")
-                .required(false)
-                .desc("The strings used to identify your internal projects, i.e. 'com.example'")
-                .longOpt("ids")
-                .hasArgs()
-                .build();
+	public GenerateMavenTreesCLI() {
+		Option projectsOption = Option.builder("p")
+				.required()
+				.desc("Path to the directory containing all Maven projects")
+				.longOpt("proj")
+				.hasArgs()
+				.numberOfArgs(1)
+				.build();
+		Option outputOption = Option.builder("o")
+				.required()
+				.desc("Path to the output directory")
+				.longOpt("out")
+				.hasArgs()
+				.numberOfArgs(1)
+				.build();
+		Option recursionOption = Option.builder("r")
+				.required(false)
+				.desc("Max depth of recursion")
+				.longOpt("recursion")
+				.hasArgs()
+				.numberOfArgs(1)
+				.build();
+		Option defaultOption = Option.builder("d")
+				.required(false)
+				.desc("The default option string to be used when building dependency trees, i.e. '-Dversion=foo")
+				.longOpt("default")
+				.hasArg()
+				.numberOfArgs(1)
+				.build();
+		Option specialOption = Option.builder("s")
+				.required(false)
+				.desc("Special option strings to be used when building dependency trees, i.e. 'com.example.api,-Dversion=bar'")
+				.longOpt("special")
+				.hasArgs()
+				.build();
 
-        options = new Options();
-        options.addOption(projectsOption);
-        options.addOption(outputOption);
-        options.addOption(recursionOption);
-        options.addOption(defaultOption);
-        options.addOption(specialOption);
-        options.addOption(idOption);
-    }
+		options = new Options();
+		options.addOption(projectsOption);
+		options.addOption(outputOption);
+		options.addOption(recursionOption);
+		options.addOption(defaultOption);
+		options.addOption(specialOption);
+	}
 
-    boolean parseArgs(String[] args) {
-        CommandLineParser parser = new DefaultParser();
-        CommandLine commandLine;
+	/**
+	 * Parses arguments from the command line. If arguments are invalid, logs an error along with
+	 * the command line syntax for the Maven tree generator.
+	 *
+	 * @param args array of arguments passed from the command line
+	 * @return true if all required arguments are provided and valid, false otherwise
+	 */
+	public boolean parseArgs(String[] args) {
+		CommandLineParser parser = new DefaultParser();
+		CommandLine commandLine;
 
-        try {
-            commandLine = parser.parse(options, args);
+		try {
+			commandLine = parser.parse(options, args);
 
-            // Set projects directory
-            setProjectsDir(commandLine.getOptionValue("p"));
-            // Set output directory
-            setOutputDir(commandLine.getOptionValue("o"));
-            // Set max recursion depth
-            if (commandLine.hasOption("r")) {
-                maxDepth = Integer.parseInt(commandLine.getOptionValue("r"));
-            }
-            // Set default option string
-            if (commandLine.hasOption("d")) {
-                defaultOption = commandLine.getOptionValue("d");
-            }
-            // Set special option strings
-            if (commandLine.hasOption("s")) {
-                String[] specialOptionValues = commandLine.getOptionValues("s");
-                for (String specialOption : specialOptionValues) {
-                    String[] kv = specialOption.split(",");
-                    if (kv.length == 2) {
-                        specialOptions.put(kv[0], kv[1]);
-                    } else if (kv.length == 1) {
-                        specialOptions.put(kv[0], "");
-                    }
-                }
-            }
-            // Set internal identifiers
-            if (commandLine.hasOption("i")) {
-                internalIdentifiers = Arrays.asList(commandLine.getOptionValues("i"));
-            }
+			// Set projects directory
+			setProjectsDir(commandLine.getOptionValue("p"));
+			// Set output directory
+			setOutputDir(commandLine.getOptionValue("o"));
+			// Set max recursion depth
+			if (commandLine.hasOption("r")) {
+				maxDepth = Integer.parseInt(commandLine.getOptionValue("r"));
+			}
+			// Set default option string
+			if (commandLine.hasOption("d")) {
+				defaultOption = commandLine.getOptionValue("d");
+			}
+			// Set special option strings
+			if (commandLine.hasOption("s")) {
+				String[] specialOptionValues = commandLine.getOptionValues("s");
+				specialOptions = new HashMap<>();
+				for (String specialOption : specialOptionValues) {
+					String[] kv = specialOption.split(",");
+					if (kv.length == 2) {
+						specialOptions.put(kv[0], kv[1]);
+					} else if (kv.length == 1) {
+						specialOptions.put(kv[0], "");
+					}
+				}
+			}
+		} catch (Exception e) {
+			LOG.error("Exception occurred while parsing arguments: {}", e.getMessage());
+			new HelpFormatter().printHelp(CMD_LINE_SYNTAX, options);
+			return false;
+		}
+		return true;
+	}
 
-        } catch (Exception e) {
-            System.out.println("ERROR: Exception occurred. " + e.getMessage());
-            printHelp();
-            return false;
-        }
-        return true;
-    }
+	/**
+	 * Gets the file for the projects directory as specified by the command line arguments.
+	 *
+	 * @return file representing the projects directory
+	 */
+	public File getProjectsDir() {
+		return projectsDir;
+	}
 
-    File getProjectsDir() {
-        return projectsDir;
-    }
+	/**
+	 * Sets the projects directory file using the given path and ensures it is a valid directory.
+	 *
+	 * @param projectsPath path to the projects directory
+	 * @throws IllegalArgumentException if the path is invalid
+	 */
+	private void setProjectsDir(String projectsPath) {
+		projectsDir = new File(projectsPath);
+		if (!projectsDir.exists() || !projectsDir.isDirectory()) {
+			throw new IllegalArgumentException(
+					"Please provide a valid path to the projects directory");
+		}
+	}
 
-    private void setProjectsDir(String projectsPath) {
-        projectsDir = new File(projectsPath);
-        if (!projectsDir.exists() && !projectsDir.isDirectory()) {
-            throw new IllegalArgumentException("Please provide a valid path to the projects directory.");
-        }
-    }
+	/**
+	 * Gets the file for the output directory as specified by the command line arguments.
+	 *
+	 * @return file representing the output directory
+	 */
+	public File getOutputDir() {
+		return outputDir;
+	}
 
-    File getOutputDir() {
-        return outputDir;
-    }
+	/**
+	 * Sets the output directory file using the given path and ensures it is a valid directory.
+	 *
+	 * @param outputPath path to the output directory
+	 * @throws IllegalArgumentException if the path is invalid
+	 */
+	private void setOutputDir(String outputPath) {
+		outputDir = new File(outputPath);
+		boolean success = outputDir.mkdirs();
+		if (!success && !outputDir.isDirectory()) {
+			throw new IllegalArgumentException(
+					"Please provide a valid path to the output directory");
+		}
+	}
 
-    private void setOutputDir(String outputPath) {
-        outputDir = new File(outputPath);
-        boolean success = outputDir.mkdirs();
-        if (!success && !outputDir.isDirectory()) {
-            throw new IllegalArgumentException("Please provide a valid path to the output directory.");
-        }
-    }
+	/**
+	 * Gets the max depth of recursion for the projects directory as specified by the command line
+	 * arguments.
+	 *
+	 * @return max depth of recursion for the projects directory
+	 */
+	public int getMaxDepth() {
+		return maxDepth;
+	}
 
-    int getMaxDepth() {
-        return maxDepth;
-    }
+	/**
+	 * Gets the default option string for the Maven dependency tree command as specified by the
+	 * command line arguments.
+	 *
+	 * @return default option string for the Maven dependency tree command
+	 */
+	public String getDefaultOption() {
+		return defaultOption;
+	}
 
-    String getDefaultOption() {
-        return defaultOption;
-    }
-
-    Map<String, String> getSpecialOptions() {
-        return specialOptions;
-    }
-
-    List<String> getInternalIdentifiers() {
-        return internalIdentifiers;
-    }
-
-    void printHelp() {
-        new HelpFormatter().printHelp("maventrees", options);
-    }
+	/**
+	 * Gets the special option strings map for the Maven dependency tree command as specified by the
+	 * command line arguments.
+	 *
+	 * @return special option strings map for the Maven dependency tree command
+	 */
+	public Map<String, String> getSpecialOptions() {
+		return specialOptions;
+	}
 }

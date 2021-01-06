@@ -20,35 +20,126 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Represents a software component, such as a Maven artifact or an NPM library. Stores information
+ * about vulnerabilities and relationships to other artifacts.
+ *
+ * @author mcool
+ */
 public interface Artifact extends Comparable<Artifact> {
 
-    String getName();
+	/**
+	 * Gets the name of this artifact.
+	 *
+	 * @return artifact name
+	 */
+	String getName();
 
-    int getTier();
+	/**
+	 * Gets the tier this artifact is assigned to. A tier represents a grouping of artifacts that
+	 * are not dependent upon one another and can be upgraded simultaneously.
+	 *
+	 * @return artifact tier
+	 */
+	int getTier();
 
-    int getConnections();
+	/**
+	 * Gets the number of other artifacts that this artifact is connected to.
+	 *
+	 * @return number of artifact connections
+	 */
+	int getConnections();
 
-    int getFindings();
+	/**
+	 * Gets the number of vulnerability findings of this artifact.
+	 *
+	 * @return number of artifact findings
+	 */
+	int getFindings();
 
-    Set<String> getVersions();
+	/**
+	 * Gets the list of known versions of this artifact.
+	 *
+	 * @return list of artifact versions
+	 */
+	Set<String> getVersions();
 
-    boolean isVulnerable();
+	/**
+	 * Determines whether this artifact contains any vulnerabilities.
+	 *
+	 * @return true if this artifact is vulnerable, false otherwise
+	 */
+	boolean isVulnerable();
 
-    void addFindings(int findings);
+	/**
+	 * Adds the given number of findings to this artifact's findings.
+	 *
+	 * @param findings number of findings to add
+	 */
+	void addFindings(int findings);
 
-    void addVersion(String version);
+	/**
+	 * Adds the given version string to this artifact's list of versions. If the given version is
+	 * already present, does nothing.
+	 *
+	 * @param version version to add
+	 */
+	void addVersion(String version);
 
-    void addParent(String version, Artifact parent);
+	/**
+	 * Adds the given {@link Artifact} to the given version of this artifact as a parent. If this
+	 * artifact does not contain the given version, does nothing.
+	 *
+	 * @param version version of the artifact to add the parent to
+	 * @param parent  the parent artifact
+	 */
+	void addParent(String version, Artifact parent);
 
-    void addChild(String version, Artifact child);
+	/**
+	 * Adds the given {@link Artifact} to the given version of this artifact as a child. If this
+	 * artifact does not contain the given version, does nothing.
+	 *
+	 * @param version version of the artifact to add the child to
+	 * @param child   the child artifact
+	 */
+	void addChild(String version, Artifact child);
 
-    void findCycles(List<String> visited);
+	/**
+	 * Identifies cycles among artifact dependencies using the given list of visited artifacts.
+	 *
+	 * @param visited list of artifacts that have already been visited while identifying cycles
+	 */
+	void findCycles(List<String> visited);
 
-    void assignTiers();
+	/**
+	 * Assigns a tier to all artifacts that depend on this artifact. A tier will only be assigned
+	 * if an artifact is internal and if it contains vulnerable dependencies.
+	 */
+	void assignTiers();
 
-    void assignTier(int tier, String root, String direct, List<String> visited);
+	/**
+	 * Recursively assigns a tier to this artifact and artifacts that depend upon it. A tier will
+	 * only be assigned if an artifact is internal and if it contains vulnerable dependencies.
+	 *
+	 * @param tier    current tier
+	 * @param root    root artifact of the vulnerability
+	 * @param direct  direct vulnerable dependency of this artifact
+	 * @param visited list of previously visited artifacts
+	 */
+	void assignTier(int tier, String root, String direct, List<String> visited);
 
-    Set<String> getInternalUpgrades();
+	/**
+	 * Gets the set of internal artifact upgrades for this artifact.
+	 *
+	 * @return set of internal artifact upgrades
+	 */
+	Set<String> getInternalUpgrades();
 
-    Map<String, Set<String>> getExternalUpgrades();
+	/**
+	 * Gets a map of external artifact upgrades for this artifact. Each entry contains the direct
+	 * external artifact to upgrade and a set of its root vulnerable dependencies.
+	 *
+	 * @return map of external artifact upgrades
+	 */
+	Map<String, Set<String>> getExternalUpgrades();
 }

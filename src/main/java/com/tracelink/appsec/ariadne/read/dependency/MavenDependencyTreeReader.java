@@ -28,83 +28,103 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of a {@link DependencyReader} that parses Maven dependency trees.
+ *
+ * @author mcool
+ */
 public class MavenDependencyTreeReader implements DependencyReader {
 
-    private File[] files;
+	private final File[] files;
+	private final Pattern directDepPattern = Pattern.compile("[+\\\\]- .*");
+	private final Pattern transitiveDepPattern = Pattern.compile("(\\| {2}| {3}).*");
 
-    private Pattern directDepPattern = Pattern.compile("[+\\\\]- .*");
+	public MavenDependencyTreeReader(String path) throws FileNotFoundException {
+		File file = new File(path);
+		if (!file.exists()) {
+			throw new FileNotFoundException(
+					"Please provide a valid path to the dependency tree(s)");
+		}
+		if (file.isDirectory()) {
+			files = file.listFiles();
+		} else {
+			files = new File[]{file};
+		}
+	}
 
-    private Pattern transitiveDepPattern = Pattern.compile("(\\| {2}| {3}).*");
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public List<Map.Entry<String, String>> readDependencies() throws IOException {
+		List<Map.Entry<String, String>> dependencies = new ArrayList<>();
 
-    public MavenDependencyTreeReader(String path) throws FileNotFoundException {
-        File file = new File(path);
-        if (!file.exists()) {
-            throw new FileNotFoundException("Please provide a valid path to the dependency tree(s).");
-        }
-        if (file.isDirectory()) {
-            files = file.listFiles();
-        } else {
-            files = new File[]{file};
-        }
-    }
+		for (File file : files) {
+			try (BufferedReader fileReader = new BufferedReader(new FileReader(file))) {
+				List<String> lines = fileReader.lines().collect(Collectors.toList());
+				dependencies.addAll(readMavenTree(lines));
+			}
+		}
+		return dependencies;
+	}
 
-    @Override
-    public List<Map.Entry<String, String>> readDependencies() throws IOException {
-        List<Map.Entry<String, String>> dependencies = new ArrayList<>();
+	/**
+	 * Parses the given Maven tree, which is stored as a list of lines
+	 *
+	 * @param tree the Maven dependency tree to parse
+	 * @return list of dependency entries
+	 */
+	private List<Map.Entry<String, String>> readMavenTree(List<String> tree) {
+		List<Map.Entry<String, String>> dependencies = new ArrayList<>();
+		String parent = null;
+		List<String> childTree = new ArrayList<>();
 
-        for (File file : files) {
-            try (BufferedReader fileReader = new BufferedReader(new FileReader(file))) {
-                List<String> lines = fileReader.lines().collect(Collectors.toList());
-                dependencies.addAll(readMavenTree(lines));
-            }
-        }
-        return dependencies;
-    }
+		for (String line : tree) {
 
-    private List<Map.Entry<String, String>> readMavenTree(List<String> tree) {
-        List<Map.Entry<String, String>> dependencies = new ArrayList<>();
-        String parent = null;
-        List<String> childTree = new ArrayList<>();
+			if (directDepPattern.matcher(line).matches()) {
+				// Found a direct dependency
+				// Recursively parse child tree, if there are transitive dependency
+				if (childTree.size() > 1) {
+					dependencies.addAll(readMavenTree(childTree));
+				}
+				// Initialize new child tree
+				String child = line.substring(3);
+				childTree = new ArrayList<>();
+				childTree.add(child);
+				// Add direct dependency tuple to master list
+				dependencies.add(new AbstractMap.SimpleEntry<>(parent, formatArtifactName(child)));
+			} else if (transitiveDepPattern.matcher(line).matches()) {
+				// Found a transitive dependency
+				childTree.add(line.substring(3));
+			} else {
+				// Found a new parent
+				parent = formatArtifactName(line);
+			}
+		}
 
-        for (String line : tree) {
+		if (childTree.size() > 1) {
+			dependencies.addAll(readMavenTree(childTree));
+		}
+		return dependencies;
+	}
 
-            if (directDepPattern.matcher(line).matches()) {
-                // Found a direct dependency
-                // Recursively parse child tree, if there are transitive dependency
-                if (childTree.size() > 1) {
-                    dependencies.addAll(readMavenTree(childTree));
-                }
-                // Initialize new child tree
-                String child = line.substring(3);
-                childTree = new ArrayList<>();
-                childTree.add(child);
-                // Add direct dependency tuple to master list
-                dependencies.add(new AbstractMap.SimpleEntry<>(parent, formatArtifactName(child)));
-            } else if (transitiveDepPattern.matcher(line).matches()) {
-                // Found a transitive dependency
-                childTree.add(line.substring(3));
-            } else {
-                // Found a new parent
-                parent = formatArtifactName(line);
-            }
-        }
-
-        if (childTree.size() > 1) {
-            dependencies.addAll(readMavenTree(childTree));
-        }
-        return dependencies;
-    }
-
-    private String formatArtifactName(String artifact) {
-        String[] components = artifact.split(":");
-        String[] updatedComponents = new String[3];
-        for (int i = 0; i < components.length; i++) {
-            if (i == 2 || i > 3) {
-                continue;
-            }
-            int index = i < 2 ? i : i - 1;
-            updatedComponents[index] = components[i];
-        }
-        return String.join(":", updatedComponents).trim();
-    }
+	/**
+	 * Formats the artifact name to contain only the groupId, artifactId and version separated by
+	 * colons.
+	 *
+	 * @param artifact the artifact name to format
+	 * @return formatted artifact name
+	 */
+	private String formatArtifactName(String artifact) {
+		String[] components = artifact.split(":");
+		String[] updatedComponents = new String[3];
+		for (int i = 0; i < components.length; i++) {
+			if (i == 2 || i > 3) {
+				continue;
+			}
+			int index = i < 2 ? i : i - 1;
+			updatedComponents[index] = components[i];
+		}
+		return String.join(":", updatedComponents).trim();
+	}
 }

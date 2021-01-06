@@ -16,17 +16,36 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.write;
 
+import com.tracelink.appsec.ariadne.Ariadne;
 import com.tracelink.appsec.ariadne.model.Artifact;
-
 import java.util.List;
 
+/**
+ * Writes {@link Ariadne} results to multiple output files.
+ *
+ * @author mcool
+ */
 public interface Writer {
 
-    void setArtifacts(List<Artifact> artifacts);
+	/**
+	 * Sets the given list of artifacts to be reported by this writer.
+	 *
+	 * @param artifacts artifacts to report on
+	 */
+	void setArtifacts(List<Artifact> artifacts);
 
-    void writeDependencies();
+	/**
+	 * Writes dependency information to an output file, if configured.
+	 */
+	void writeDependencies();
 
-    void writeVulnerabilities();
+	/**
+	 * Writes vulnerability information to an output file, if configured.
+	 */
+	void writeVulnerabilities();
 
-    void writeTiers();
+	/**
+	 * Writes tier assignments to an output file.
+	 */
+	void writeTiers();
 }

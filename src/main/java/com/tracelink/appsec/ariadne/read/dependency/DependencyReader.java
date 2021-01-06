@@ -16,10 +16,25 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.read.dependency;
 
+import com.tracelink.appsec.ariadne.Ariadne;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Parses artifact dependencies into a format that is usable by {@link Ariadne}.
+ *
+ * @author mcool
+ */
 public interface DependencyReader {
-    List<Map.Entry<String, String>> readDependencies() throws IOException;
+
+	/**
+	 * Parses dependencies into a list of entries representing dependency relationships. The first
+	 * string in each entry represents the parent of the relationship, while the second string
+	 * represents the child.
+	 *
+	 * @return list of dependency entries
+	 * @throws IOException if there are problems reading from the dependency file(s).
+	 */
+	List<Map.Entry<String, String>> readDependencies() throws IOException;
 }

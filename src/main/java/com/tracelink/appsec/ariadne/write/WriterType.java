@@ -16,21 +16,34 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  */
 package com.tracelink.appsec.ariadne.write;
 
+/**
+ * Enum defining the valid writer types. Each type corresponds to a single {@link Writer}
+ * implementation.
+ *
+ * @author mcool
+ */
 public enum WriterType {
-    STANDARD_CSV("csv");
+	STANDARD_CSV("csv");
 
-    private WriterType(String name) {
-        this.name = name;
-    }
+	private final String name;
 
-    private final String name;
+	WriterType(String name) {
+		this.name = name;
+	}
 
-    public static WriterType getTypeForName(String name) {
-        for (WriterType writerType : WriterType.values()) {
-            if (writerType.name.equals(name)) {
-                return writerType;
-            }
-        }
-        throw new IllegalArgumentException(String.format("Unknown writer type - %s", name));
-    }
+	/**
+	 * Gets the {@link WriterType} with the given name, if it exists.
+	 *
+	 * @param name name of the writer type to get
+	 * @return writer type with the given name
+	 * @throws IllegalArgumentException if no such writer type exists
+	 */
+	public static WriterType getTypeForName(String name) {
+		for (WriterType writerType : WriterType.values()) {
+			if (writerType.name.equals(name)) {
+				return writerType;
+			}
+		}
+		throw new IllegalArgumentException(String.format("Unknown writer type - %s", name));
+	}
 }
